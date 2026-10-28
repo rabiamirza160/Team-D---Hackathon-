@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { sendChat } from "../api";
+import ReadAloudButton from "./ReadAloudButton";
+
+const WELCOME = {
+  en: "👋 Welcome! Ask me anything about government forms, services, or required documents.",
+  fr: "👋 Bienvenue! Posez-moi vos questions sur les formulaires, les services ou les documents requis du gouvernement."
+};
+
+// Default the toggle to the browser's language (French browsers start in French)
+const initialLanguage = navigator.language?.toLowerCase().startsWith("fr") ? "fr" : "en";
 
 function ChatPanel() {
   const [isOpen, setIsOpen] = useState(true);
   const [message, setMessage] = useState("");
-  const [language, setLanguage] = useState("en");
+  const [language, setLanguage] = useState(initialLanguage);
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([
-    {
-      type: "ai",
-      text: "👋 Welcome! Ask me anything about government forms, services, or required documents."
-    }
+    { type: "ai", lang: initialLanguage, text: WELCOME[initialLanguage] }
   ]);
 
   const messagesEndRef = useRef(null);
@@ -24,15 +30,22 @@ function ChatPanel() {
     const text = message.trim();
     if (!text || loading) return;
 
+    const toggleLang = language; // used as a fallback if the backend can't tell
+
     setMessages((prev) => [...prev, { type: "user", text }]);
     setMessage("");
     setLoading(true);
 
     try {
-      const data = await sendChat(text, language);
+      const data = await sendChat(text, toggleLang);
       setMessages((prev) => [
         ...prev,
-        { type: "ai", text: data.answer, sources: data.sources }
+        {
+          type: "ai",
+          lang: data.language || toggleLang, // the language the answer is actually in
+          text: data.answer,
+          sources: data.sources
+        }
       ]);
     } catch (err) {
       console.error(err);
@@ -40,8 +53,9 @@ function ChatPanel() {
         ...prev,
         {
           type: "ai",
+          lang: toggleLang,
           text:
-            language === "fr"
+            toggleLang === "fr"
               ? "Désolé, je n'arrive pas à joindre le serveur. Veuillez réessayer."
               : "Sorry, I couldn't reach the server. Please try again."
         }
@@ -106,7 +120,7 @@ function ChatPanel() {
 
             {msg.sources && msg.sources.length > 0 && (
               <div className="sources">
-                <span>{language === "fr" ? "Sources :" : "Sources:"}</span>
+                <span>{msg.lang === "fr" ? "Sources :" : "Sources:"}</span>
                 <ul>
                   {msg.sources.map((source) => (
                     <li key={source.url}>
@@ -120,6 +134,12 @@ function ChatPanel() {
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {msg.type === "ai" && (
+              <div className="message-actions">
+                <ReadAloudButton text={msg.text} language={msg.lang} />
               </div>
             )}
           </div>
