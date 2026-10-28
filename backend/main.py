@@ -1,7 +1,23 @@
+import json
+
+from dotenv import load_dotenv
+
+load_dotenv()  # loads .env from the repo root before anything reads env vars
+
 from typing import Literal
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
+from llm import ask_llm
+from prompts import (
+    CHECKLIST_SYSTEM,
+    NO_ANSWER,
+    build_chat_prompt,
+    build_checklist_prompt,
+    chat_system_prompt,
+)
+from retrieval import search
 
 app = FastAPI(title="Form Helper API")
 
@@ -37,7 +53,30 @@ class ChecklistResponse(BaseModel):
     items: list[ChecklistItem]
 
 
-# ---------- Endpoints (stubbed for now) ----------
+# ---------- Helpers ----------
+
+def unique_sources(chunks: list[dict]) -> list[Source]:
+    """One source per URL, in the order they were retrieved."""
+    seen = set()
+    sources = []
+    for c in chunks:
+        if c["url"] not in seen:
+            seen.add(c["url"])
+            sources.append(Source(title=c["title"], url=c["url"]))
+    return sources
+
+
+def parse_checklist(raw: str) -> list[ChecklistItem]:
+    """Parse the LLM's JSON output. Returns [] if it isn't valid."""
+    text = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    try:
+        data = json.loads(text)
+        return [ChecklistItem(**item) for item in data]
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return []
+
+
+# ---------- Endpoints ----------
 
 @app.get("/api/health")
 def health():
@@ -46,22 +85,41 @@ def health():
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
-    # TODO: retrieve chunks with search(req.message), then call the LLM
-    return ChatResponse(
-        answer=f"(stub) You asked: {req.message}",
-        sources=[Source(title="Manitoba Government", url="https://www.gov.mb.ca")],
-    )
+    chunks = search(req.message, k=5)
+
+    # Scope rule: if the data doesn't cover it, say so instead of guessing
+    if not chunks:
+        return ChatResponse(answer=NO_ANSWER[req.language], sources=[])
+
+    try:
+        answer = ask_llm(
+            chat_system_prompt(req.language),
+            build_chat_prompt(req.message, chunks),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
+
+    return ChatResponse(answer=answer, sources=unique_sources(chunks))
 
 
 @app.post("/api/checklist", response_model=ChecklistResponse)
 def checklist(req: ChecklistRequest):
-    # TODO: retrieve relevant forms, ask the LLM to build the checklist
-    return ChecklistResponse(
-        items=[
-            ChecklistItem(
-                task="Register for Manitoba Health coverage",
-                form="Manitoba Health Registration Form",
-                url="https://www.gov.mb.ca/health/mhsip/",
-            )
+    chunks = search(req.situation, k=8)
+    if not chunks:
+        return ChecklistResponse(items=[])
+
+    try:
+        raw = ask_llm(CHECKLIST_SYSTEM, build_checklist_prompt(req.situation, chunks))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
+
+    items = parse_checklist(raw)
+
+    # Fallback: if the LLM didn't return valid JSON, list the relevant forms directly
+    if not items:
+        items = [
+            ChecklistItem(task=f"Review: {c['title']}", form=c["title"], url=c["url"])
+            for c in chunks
         ]
-    )
+
+    return ChecklistResponse(items=items)
