@@ -9,6 +9,7 @@ from typing import Literal
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+from language import detect_language
 from llm import ask_llm
 from prompts import (
     CHECKLIST_SYSTEM,
@@ -31,12 +32,13 @@ class Source(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    language: Literal["en", "fr"] = "en"
+    language: Literal["en", "fr"] = "en"  # UI toggle; used as fallback only
 
 
 class ChatResponse(BaseModel):
     answer: str
     sources: list[Source]
+    language: Literal["en", "fr"]  # language the answer is written in
 
 
 class ChecklistRequest(BaseModel):
@@ -85,21 +87,24 @@ def health():
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
+    # Answer in the language of the question; the UI toggle is only a fallback
+    language = detect_language(req.message, fallback=req.language)
+
     chunks = search(req.message, k=5)
 
     # Scope rule: if the data doesn't cover it, say so instead of guessing
     if not chunks:
-        return ChatResponse(answer=NO_ANSWER[req.language], sources=[])
+        return ChatResponse(answer=NO_ANSWER[language], sources=[], language=language)
 
     try:
         answer = ask_llm(
-            chat_system_prompt(req.language),
+            chat_system_prompt(language),
             build_chat_prompt(req.message, chunks),
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"LLM error: {e}")
 
-    return ChatResponse(answer=answer, sources=unique_sources(chunks))
+    return ChatResponse(answer=answer, sources=unique_sources(chunks), language=language)
 
 
 @app.post("/api/checklist", response_model=ChecklistResponse)

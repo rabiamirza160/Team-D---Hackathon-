@@ -31,7 +31,7 @@ cd Team-D---Hackathon-
 cp .env.example .env
 ```
 
-Fill in `.env` with the keys shared in team chat. **Never commit `.env`.**
+Fill in `.env` (see `.env.example`). **Never commit `.env`.**
 
 ### 2. Build the data index (run once, and again whenever `ingest.py` changes)
 
@@ -79,7 +79,7 @@ Open http://localhost:5173.
 | Role | Owns | Branch | Who |
 |------|------|--------|-----|
 | Data & retrieval | Load scraped data, chunk + embed, `search(query)` returning top chunks with URLs | `feature/ingestion` | |
-| Backend & prompts | FastAPI server, `/api/chat` + `/api/checklist`, prompt design, LLM calls | `feature/api` | |
+| Backend & prompts | FastAPI server, `/api/chat` + `/api/checklist`, prompt design, LLM calls | `feature/api` | Rabia |
 | Frontend | React app: chat view with source links, checklist view, EN/FR toggle | `feature/frontend` | |
 | Presentation & testing | Slides (6 required sections), test scenarios, demo script, backup demo video | `docs/` | |
 
@@ -91,19 +91,31 @@ Frontend and backend both build against this. **Change it only after posting in 
 
 ```
 POST /api/chat
-  request:  { "message": "...", "language": "en" | "fr" }
-  response: { "answer": "...", "sources": [{ "title": "...", "url": "..." }] }
+  request:  { "message": "...", "language": "en" | "fr" }   ← UI toggle, used as fallback only
+  response: { "answer": "...", "sources": [{ "title": "...", "url": "..." }], "language": "en" | "fr" }
 
 POST /api/checklist
   request:  { "situation": "I just moved to Winnipeg with two kids" }
   response: { "items": [{ "task": "...", "form": "...", "url": "..." }] }
 ```
 
+**Language:** answers follow the language of the question. The toggle (which defaults to the browser language) is only used when the question is too short to tell.
+
 ### Working in parallel
 
-- **Frontend:** all API calls live in `frontend/src/api.ts`, with a `USE_MOCK` flag that returns fake data in the contract shape. Flip it to `false` once the backend is running.
-- **Backend:** the first version of each endpoint returns a hardcoded response in the contract shape. Real search and LLM logic gets added behind it.
-- **Connecting:** `frontend/vite.config.ts` proxies `/api` to `http://localhost:8000`, so there are no CORS issues.
+- **Frontend:** all API calls live in `frontend/src/api.js`.
+- **Backend:** each endpoint returns data in the contract shape. Search and LLM logic sit behind it.
+- **Connecting:** `frontend/vite.config.js` proxies `/api` to `http://localhost:8000`, so there are no CORS issues.
+
+---
+
+## AI setup
+
+- **Model:** Llama 3.2 (3B) by Meta, running locally through **Ollama**. No API keys, and no data leaves the machine.
+- **Install:** `curl -fsSL https://ollama.com/install.sh | sh`, then `ollama pull llama3.2:3b`
+- **`.env`:** `LLM_PROVIDER=openai_compatible`, `LLM_BASE_URL=http://localhost:11434/v1`, `LLM_MODEL=llama3.2:3b`
+- **No Ollama?** Use `LLM_PROVIDER=stub` for placeholder answers. Everything else still works.
+- **Gov laptop SSL error?** Export the `GOC-GDC-ROOT-A` certificate from Windows (`certmgr.msc`) and add it to WSL with `update-ca-certificates`.
 
 ---
 
@@ -117,14 +129,14 @@ Every chunk in `data/chunks.jsonl` looks like this:
 
 Keep `title` and `url` through every step, since they power the source links in answers.
 
-The backend calls one function from the data layer:
+The backend calls one function from the data layer (`backend/retrieval.py`):
 
 ```python
 def search(query: str, k: int = 5) -> list[dict]:
     # returns [{"text": ..., "title": ..., "url": ..., "lang": ...}, ...]
 ```
 
-As long as that shape stays the same, the storage underneath (Chroma, FAISS, etc.) can change without breaking the backend.
+As long as that shape stays the same, the search underneath can change without breaking the backend.
 
 ---
 
@@ -132,8 +144,8 @@ As long as that shape stays the same, the storage underneath (Chroma, FAISS, etc
 
 | When | Goal |
 |------|------|
-| **Wed Oct 28** | End to end: ask a question in the browser, get a real answer with a source link |
-| **Thu Oct 29 AM** | Checklist feature, French support, better answer quality |
+| **Wed Oct 28** | End to end: ask a question in the browser, get a real answer with a source link ✅ |
+| **Thu Oct 29 AM** | Real data + search, checklist UI, answer quality |
 | **Thu Oct 29 PM** | UI polish, slides with real screenshots, full run-through |
 | **Thu Oct 29 evening** | Demo freeze, record backup demo video |
 | **Fri Oct 30** | Final rehearsal, then present (8 min + 2 min Q&A) |
