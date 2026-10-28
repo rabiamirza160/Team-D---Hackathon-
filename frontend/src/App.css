@@ -242,3 +242,72 @@ body {
 .open-chat-btn:hover {
   background: #1d4ed8;
 }
+
+/* ---------- Backend connection additions ---------- */
+
+.chat-messages {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.message-text {
+  white-space: pre-wrap; /* keeps line breaks from the AI's answer */
+  text-align: left;
+}
+
+.sources {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #dbe4f0;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.sources span {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.sources ul {
+  list-style: none;
+  margin-top: 4px;
+}
+
+.sources a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.sources a:hover {
+  text-decoration: underline;
+}
+
+.thinking {
+  color: #64748b;
+  font-style: italic;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lang-toggle {
+  background: #f1f5f9;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lang-toggle:hover {
+  background: #dbeafe;
+}
+
+.chat-input button:disabled,
+.chat-input input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
