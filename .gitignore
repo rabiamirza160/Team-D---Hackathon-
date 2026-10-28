@@ -1,0 +1,29 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# Vector stores / local indexes
+*.faiss
+chroma/
+.chroma/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
