@@ -30,7 +30,7 @@ function ChatPanel() {
         className="open-chat-btn"
         onClick={() => setIsOpen(true)}
       >
-        💬 Ask GovernmentGuide AI
+        💬 Ask GovernmentGuide
       </button>
     );
   }
