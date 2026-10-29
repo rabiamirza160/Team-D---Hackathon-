@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { getChecklist } from "../api";
-import { buildSituation, COPY } from "../data/questions";
+import {
+  buildChecklistQuery,
+  buildSituation,
+  COPY,
+} from "../data/questions";
 import { faqsForProfile } from "../data/faq";
 import ReadAloudButton from "./ReadAloudButton";
 import ResultsChat from "./ResultsChat";
@@ -60,6 +64,7 @@ function ResultsSection({
 export default function FormResults({ profile, language, onRestart }) {
   const t = COPY[language] || COPY.en;
   const situation = buildSituation(profile, language);
+  const checklistQuery = buildChecklistQuery(profile);
   const faqs = faqsForProfile(profile, language);
 
   const [items, setItems] = useState(null);
@@ -74,23 +79,53 @@ export default function FormResults({ profile, language, onRestart }) {
   useEffect(() => {
     let cancelled = false;
 
-    getChecklist(situation)
-      .then((data) => {
-        if (cancelled) return;
-        setItems(Array.isArray(data.items) ? data.items : []);
-        setError(false);
-      })
-      .catch(() => {
+    async function loadForms() {
+      setItems(null);
+      setError(false);
+
+      const attempts = [
+        checklistQuery,
+        profile?.program,
+        profile?.topic && profile?.province
+          ? `${profile.topic} ${profile.province}`
+          : null,
+        profile?.query,
+        "Manitoba Student Aid",
+        "Manitoba Employment and Income Assistance",
+      ].filter(Boolean);
+
+      try {
+        // Checklist queries are always English profile tags. Sending language="fr"
+        // makes the backend treat ambiguous English as French, "translate" via the
+        // stub LLM into a placeholder string, and return zero search hits.
+        for (const query of attempts) {
+          const data = await getChecklist(query, "en");
+          if (cancelled) return;
+          const next = Array.isArray(data.items) ? data.items : [];
+          if (next.length > 0) {
+            setItems(next);
+            setError(false);
+            return;
+          }
+        }
+        if (!cancelled) {
+          setItems([]);
+          setError(false);
+        }
+      } catch {
         if (!cancelled) {
           setError(true);
           setItems([]);
         }
-      });
+      }
+    }
+
+    loadForms();
 
     return () => {
       cancelled = true;
     };
-  }, [situation]);
+  }, [checklistQuery, profile]);
 
   const loading = items === null;
   const formCount = items?.length ?? 0;
@@ -191,9 +226,9 @@ export default function FormResults({ profile, language, onRestart }) {
             }
           >
             <ResultsChat
-              key={`${language}-${situation}`}
+              key={`${language}-${checklistQuery}`}
               language={language}
-              situation={situation}
+              situation={checklistQuery}
               copy={t}
               onSpeakTargetChange={handleSpeakTargetChange}
             />

@@ -505,15 +505,68 @@ export const QUESTIONS = {
 
 export const START_QUESTION_ID = "need";
 
-/** Build a plain-language situation string for POST /api/checklist */
+function uniqueParts(values) {
+  const parts = [];
+  const seen = new Set();
+  for (const value of values) {
+    const text = String(value || "").trim();
+    if (!text) continue;
+    const key = text.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    parts.push(text);
+  }
+  return parts;
+}
+
+/**
+ * Human-readable summary for the results panel (not sent to search as-is).
+ */
 export function buildSituation(profile, language = "en") {
   const prefix = COPY[language]?.situationPrefix || COPY.en.situationPrefix;
-  const { query, ...rest } = profile;
-  const parts = Object.entries(rest)
-    .filter(([, v]) => v)
-    .map(([key, value]) => `${key}: ${value}`);
-  const queryPart = query ? `Asked: "${query}". ` : "";
-  return `${prefix} ${queryPart}${parts.join("; ")}.`;
+  const parts = uniqueParts([
+    profile?.query,
+    profile?.program,
+    profile?.topic,
+    profile?.province,
+    profile?.intent,
+    profile?.document,
+    profile?.event,
+    profile?.student_status,
+    profile?.household,
+    profile?.residency,
+    profile?.origin,
+  ]);
+
+  if (parts.length === 0) return prefix;
+  return `${prefix} ${parts.join(". ")}.`;
+}
+
+/**
+ * Short, high-signal query for POST /api/checklist.
+ * Avoids display fluff ("My situation"), household phrasing ("myself only"),
+ * and metadata keys that make BM25 coverage fail.
+ */
+export function buildChecklistQuery(profile) {
+  const parts = uniqueParts([
+    profile?.program,
+    profile?.topic,
+    profile?.province,
+    profile?.intent,
+    profile?.document,
+    profile?.event,
+    profile?.query,
+  ]);
+
+  if (parts.length > 0) return parts.join(" ");
+
+  // Last-resort queries aligned with /data coverage
+  const topic = (profile?.topic || "").toLowerCase();
+  if (topic.includes("student")) return "Manitoba Student Aid apply";
+  if (topic.includes("employment") || topic.includes("income")) {
+    return "Manitoba Employment and Income Assistance";
+  }
+  return "Manitoba Student Aid Employment and Income Assistance";
 }
 
 const CHIP_LABELS = {

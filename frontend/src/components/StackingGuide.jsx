@@ -274,7 +274,7 @@ export default function StackingGuide({ language, onLanguageChange }) {
         {showResults && (
           <div id="results">
             <FormResults
-              key={`${language}-${JSON.stringify(profile)}`}
+              key={JSON.stringify(profile)}
               profile={profile}
               language={language}
               onRestart={handleRestart}

@@ -45,8 +45,9 @@ export default function ResultsChat({ language, situation, copy, onSpeakTargetCh
     setMessage("");
     setLoading(true);
 
+    // Keep chat search lean — long labeled situation strings zero out BM25 hits
     const contextual = situation
-      ? `${text}\n\n(My situation: ${situation})`
+      ? `${text}\n\nContext: ${situation}`
       : text;
 
     try {
