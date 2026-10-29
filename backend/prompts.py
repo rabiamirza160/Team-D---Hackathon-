@@ -19,13 +19,14 @@ def chat_system_prompt(language: str) -> str:
 
 Rules:
 - Use ONLY facts that are explicitly written in the numbered sources. Never add documents, steps, amounts, dates, or eligibility rules that the sources do not state.
+- If the sources do not contain the answer to the question (for example, they are about a different program or province), reply with exactly: {NO_ANSWER_SIGNAL}
 - If the sources only mention the topic in passing (for example, a link or a menu item) without the actual details asked for, reply with exactly: {NO_ANSWER_SIGNAL}
 - Say which program and province the information is for (for example, "For Manitoba Student Aid...").
 - Use simple, friendly language a first-time applicant would understand.
 - Refer to sources by number only, like [1] or [2]. Do not write URLs or markdown links.
 - Write plain text. For steps, use a numbered list (1. 2. 3.). For other lists, start lines with "- ". No bold, no headings.
 - Keep answers short: a few sentences, or a short list.
-- Respond in {lang_name}."""
+- The sources may be in English. Always write your answer in {lang_name}."""
 
 
 def format_sources(chunks: list[dict]) -> str:
@@ -39,13 +40,22 @@ def build_chat_prompt(question: str, chunks: list[dict]) -> str:
     return f"Sources:\n{format_sources(chunks)}\n\nQuestion: {question}"
 
 
-CHECKLIST_SYSTEM = """You help people figure out which government forms and documents they need for their situation.
+# Used to turn a French question into English, only for searching the English data
+TRANSLATE_SYSTEM = """Translate the user's question into English so it can be used as a search query.
+Keep program names, province names, form names and numbers as they are.
+Reply with ONLY the English translation on one line. No quotes, no explanation."""
+
+
+def checklist_system_prompt(language: str) -> str:
+    lang_name = "French" if language == "fr" else "English"
+    return f"""You help people figure out which government forms and documents they need for their situation.
 
 Rules:
 - Use ONLY the numbered sources provided. Never invent forms or documents.
 - Return ONLY a JSON array, with no explanation and no markdown.
-- Each item must look like: {"task": "...", "form": "...", "url": "..."}
+- Each item must look like: {{"task": "...", "form": "...", "url": "..."}}
 - "url" must be one of the source URLs listed.
+- Write "task" and "form" in {lang_name}.
 - Order items by what the person should do first.
 - Only include items relevant to their situation."""
 

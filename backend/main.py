@@ -1,4 +1,5 @@
 import json
+from functools import lru_cache
 
 from dotenv import load_dotenv
 
@@ -12,12 +13,13 @@ from pydantic import BaseModel
 from language import detect_language
 from llm import ask_llm
 from prompts import (
-    CHECKLIST_SYSTEM,
     NO_ANSWER,
     NO_ANSWER_SIGNAL,
+    TRANSLATE_SYSTEM,
     build_chat_prompt,
     build_checklist_prompt,
     chat_system_prompt,
+    checklist_system_prompt,
 )
 from retrieval import search
 
@@ -44,6 +46,7 @@ class ChatResponse(BaseModel):
 
 class ChecklistRequest(BaseModel):
     situation: str
+    language: Literal["en", "fr"] = "en"  # UI toggle; used as fallback only
 
 
 class ChecklistItem(BaseModel):
@@ -56,7 +59,37 @@ class ChecklistResponse(BaseModel):
     items: list[ChecklistItem]
 
 
+class DetectRequest(BaseModel):
+    text: str
+    fallback: Literal["en", "fr"] = "en"
+
+
+class DetectResponse(BaseModel):
+    language: Literal["en", "fr"]
+
+
 # ---------- Helpers ----------
+
+@lru_cache(maxsize=256)
+def search_query_for(message: str, language: str) -> str:
+    """
+    Our data is in English, so French questions are translated to English
+    for searching only. The answer is still written in French.
+    Cached so asking the same question twice doesn't translate twice.
+    """
+    if language != "fr":
+        return message
+    try:
+        translated = ask_llm(TRANSLATE_SYSTEM, message).strip()
+    except Exception as e:
+        print(f"[search] translation failed, searching original text: {e}")
+        return message
+    if not translated:
+        return message
+    translated = translated.splitlines()[0].strip().strip('"').strip("«»").strip()
+    print(f"[search] FR -> EN: {message!r} -> {translated!r}")
+    return translated or message
+
 
 def unique_sources(chunks: list[dict]) -> list[Source]:
     """One source per URL, in the order they were retrieved."""
@@ -86,12 +119,18 @@ def health():
     return {"status": "ok"}
 
 
+@app.post("/api/detect-language", response_model=DetectResponse)
+def detect(req: DetectRequest):
+    """Lets the UI switch languages instantly, before the answer comes back."""
+    return DetectResponse(language=detect_language(req.text, fallback=req.fallback))
+
+
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     # Answer in the language of the question; the UI toggle is only a fallback
     language = detect_language(req.message, fallback=req.language)
 
-    chunks = search(req.message, k=5)
+    chunks = search(search_query_for(req.message, language), k=5)
 
     # Scope rule: if the data doesn't cover it, say so instead of guessing
     if not chunks:
@@ -100,7 +139,7 @@ def chat(req: ChatRequest):
     try:
         answer = ask_llm(
             chat_system_prompt(language),
-            build_chat_prompt(req.message, chunks),
+            build_chat_prompt(req.message, chunks),  # original question, so it answers in that language
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"LLM error: {e}")
@@ -114,12 +153,17 @@ def chat(req: ChatRequest):
 
 @app.post("/api/checklist", response_model=ChecklistResponse)
 def checklist(req: ChecklistRequest):
-    chunks = search(req.situation, k=8)
+    language = detect_language(req.situation, fallback=req.language)
+
+    chunks = search(search_query_for(req.situation, language), k=8)
     if not chunks:
         return ChecklistResponse(items=[])
 
     try:
-        raw = ask_llm(CHECKLIST_SYSTEM, build_checklist_prompt(req.situation, chunks))
+        raw = ask_llm(
+            checklist_system_prompt(language),
+            build_checklist_prompt(req.situation, chunks),
+        )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"LLM error: {e}")
 
