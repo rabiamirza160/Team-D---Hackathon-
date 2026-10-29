@@ -14,6 +14,7 @@ MAX_PER_PAGE = 2             # avoid filling results with chunks from one page
 OTHER_PROVINCE_WEIGHT = 0.6  # when no province is named, prefer Manitoba (our focus)
 MIN_COVERAGE = 0.5           # a result must match at least half of the question's important words
 RELATIVE_CUTOFF = 0.35       # drop results scoring far below the best one
+TITLE_WEIGHT = 1.5           # page titles are often the question itself ("What information do I need?")
 
 # Common words that don't help find the right page
 STOPWORDS = {
@@ -43,16 +44,18 @@ def tokenize(text: str) -> list[str]:
 def _load():
     if not CHUNKS_FILE.exists():
         print(f"WARNING: {CHUNKS_FILE} not found. Run: python3 data/ingest.py")
-        return [], None, []
+        return [], None, None, []
     with CHUNKS_FILE.open(encoding="utf-8") as f:
         chunks = [json.loads(line) for line in f if line.strip()]
-    # Index the title too, so "Saskatchewan" or "income support" matches the right program
+    # Body index includes the title, so "Saskatchewan" or "income support" matches the right program
     corpus = [tokenize(f"{c['title']} {c['text']}") for c in chunks]
+    # Separate title index, so a page titled like the question gets a boost
+    titles = [tokenize(c["title"]) for c in chunks]
     print(f"Loaded {len(chunks)} chunks for search")
-    return chunks, BM25Okapi(corpus), [set(doc) for doc in corpus]
+    return chunks, BM25Okapi(corpus), BM25Okapi(titles), [set(doc) for doc in corpus]
 
 
-CHUNKS, BM25, CHUNK_WORDS = _load()
+CHUNKS, BM25, TITLE_BM25, CHUNK_WORDS = _load()
 
 
 def _province_rule(query: str):
@@ -100,23 +103,29 @@ def search(query: str, k: int = 5) -> list[dict]:
     if total_weight == 0:
         return []
 
-    scores = list(BM25.get_scores(tokens))
+    body_scores = BM25.get_scores(tokens)
+    title_scores = TITLE_BM25.get_scores(tokens)
     rule = _province_rule(query)
 
+    scores = []
     for i, chunk in enumerate(CHUNKS):
         # Must cover enough of the important words, not just "apply" or "documents"
         matched = sum(w for t, w in weights.items() if t in CHUNK_WORDS[i])
         if matched / total_weight < MIN_COVERAGE:
-            scores[i] = 0
+            scores.append(0.0)
             continue
+
+        score = body_scores[i] + TITLE_WEIGHT * title_scores[i]
 
         is_sk = chunk.get("program", "").startswith("Saskatchewan")
         if rule == "sk" and not is_sk:
-            scores[i] = 0      # asked about Saskatchewan: hide Manitoba
+            score = 0.0      # asked about Saskatchewan: hide Manitoba
         elif rule == "mb" and is_sk:
-            scores[i] = 0      # asked about Manitoba: hide Saskatchewan
+            score = 0.0      # asked about Manitoba: hide Saskatchewan
         elif rule is None and is_sk:
-            scores[i] *= OTHER_PROVINCE_WEIGHT  # no province named: prefer Manitoba
+            score *= OTHER_PROVINCE_WEIGHT  # no province named: prefer Manitoba
+
+        scores.append(score)
 
     ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
     if not ranked or scores[ranked[0]] <= 0:
