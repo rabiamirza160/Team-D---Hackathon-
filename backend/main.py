@@ -158,4 +158,38 @@ def chat(req: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"LLM error: {e}")
 
-    # The model signals when the sources
+    # The model signals when the sources don't answer the question
+    if NO_ANSWER_SIGNAL in answer:
+        return ChatResponse(answer=NO_ANSWER[language], sources=[], language=language)
+
+    return ChatResponse(answer=answer, sources=unique_sources(chunks), language=language)
+
+
+@app.post("/api/checklist", response_model=ChecklistResponse)
+def checklist(req: ChecklistRequest):
+    language = detect_language(req.situation, fallback=req.language)
+
+    chunks = search(search_query_for(req.situation, language), k=8)
+    if not chunks:
+        return ChecklistResponse(items=[])
+
+    try:
+        raw = ask_llm(
+            checklist_system_prompt(language),
+            build_checklist_prompt(req.situation, chunks),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
+
+    valid_urls = {c["url"] for c in chunks}
+    items = parse_checklist(raw, valid_urls)
+
+    # Fallback: if the LLM's output was invalid or every link was made up,
+    # list the real relevant pages directly
+    if not items:
+        items = [
+            ChecklistItem(task=f"Review: {s.title}", form="", url=s.url)
+            for s in unique_sources(chunks)
+        ]
+
+    return ChecklistResponse(items=items)
