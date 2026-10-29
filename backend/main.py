@@ -173,18 +173,20 @@ def checklist(req: ChecklistRequest):
     if not chunks:
         return ChecklistResponse(items=[])
 
+    valid_urls = {c["url"] for c in chunks}
+    items: list[ChecklistItem] = []
+
     try:
         raw = ask_llm(
             checklist_system_prompt(language),
             build_checklist_prompt(req.situation, chunks),
         )
+        items = parse_checklist(raw, valid_urls)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
+        # Don't block forms when the LLM is slow/down — still return real pages
+        print(f"[checklist] LLM failed, using retrieval fallback: {e}")
 
-    valid_urls = {c["url"] for c in chunks}
-    items = parse_checklist(raw, valid_urls)
-
-    # Fallback: if the LLM's output was invalid or every link was made up,
+    # Fallback: if the LLM's output was invalid, empty, or unavailable,
     # list the real relevant pages directly
     if not items:
         items = [

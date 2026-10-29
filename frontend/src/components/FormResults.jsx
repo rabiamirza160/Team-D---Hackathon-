@@ -226,9 +226,8 @@ export default function FormResults({ profile, language, onRestart }) {
             }
           >
             <ResultsChat
-              key={`${language}-${checklistQuery}`}
+              key={language}
               language={language}
-              situation={checklistQuery}
               copy={t}
               onSpeakTargetChange={handleSpeakTargetChange}
             />

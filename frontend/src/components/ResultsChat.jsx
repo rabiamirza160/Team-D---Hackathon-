@@ -19,7 +19,7 @@ function latestAi(messages) {
   return null;
 }
 
-export default function ResultsChat({ language, situation, copy, onSpeakTargetChange }) {
+export default function ResultsChat({ language, copy, onSpeakTargetChange }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState(() => [welcomeMessage(language)]);
@@ -45,13 +45,10 @@ export default function ResultsChat({ language, situation, copy, onSpeakTargetCh
     setMessage("");
     setLoading(true);
 
-    // Keep chat search lean — long labeled situation strings zero out BM25 hits
-    const contextual = situation
-      ? `${text}\n\nContext: ${situation}`
-      : text;
-
+    // Send the question alone — same contract as the old chatbot.
+    // Appending the profile query here poisoned BM25 hits and language detection.
     try {
-      const data = await sendChat(contextual, language);
+      const data = await sendChat(text, language);
       setMessages((prev) => [
         ...prev,
         {
