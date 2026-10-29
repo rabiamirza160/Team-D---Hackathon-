@@ -68,6 +68,18 @@ class DetectResponse(BaseModel):
     language: Literal["en", "fr"]
 
 
+# ---------- Caches ----------
+# Answers are cached in memory after the first time a question is asked, so
+# repeated questions (like warmed-up demo questions) return instantly.
+# The cache resets whenever the server restarts.
+CHAT_CACHE: dict[tuple[str, str], ChatResponse] = {}
+CHECKLIST_CACHE: dict[tuple[str, str], ChecklistResponse] = {}
+
+
+def cache_key(text: str, language: str) -> tuple[str, str]:
+    return (" ".join(text.lower().split()), language)
+
+
 # ---------- Helpers ----------
 
 @lru_cache(maxsize=256)
@@ -75,7 +87,6 @@ def search_query_for(message: str, language: str) -> str:
     """
     Our data is in English, so French questions are translated to English
     for searching only. The answer is still written in French.
-    Cached so asking the same question twice doesn't translate twice.
     """
     if language != "fr":
         return message
@@ -144,11 +155,18 @@ def chat(req: ChatRequest):
     # Answer in the language of the question; the UI toggle is only a fallback
     language = detect_language(req.message, fallback=req.language)
 
+    key = cache_key(req.message, language)
+    if key in CHAT_CACHE:
+        print(f"[cache] chat hit: {req.message!r}")
+        return CHAT_CACHE[key]
+
     chunks = search(search_query_for(req.message, language), k=5)
 
     # Scope rule: if the data doesn't cover it, say so instead of guessing
     if not chunks:
-        return ChatResponse(answer=NO_ANSWER[language], sources=[], language=language)
+        response = ChatResponse(answer=NO_ANSWER[language], sources=[], language=language)
+        CHAT_CACHE[key] = response
+        return response
 
     try:
         answer = ask_llm(
@@ -156,18 +174,26 @@ def chat(req: ChatRequest):
             build_chat_prompt(req.message, chunks),  # original question, so it answers in that language
         )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
+        raise HTTPException(status_code=502, detail=f"LLM error: {e}")  # errors are never cached
 
     # The model signals when the sources don't answer the question
     if NO_ANSWER_SIGNAL in answer:
-        return ChatResponse(answer=NO_ANSWER[language], sources=[], language=language)
+        response = ChatResponse(answer=NO_ANSWER[language], sources=[], language=language)
+    else:
+        response = ChatResponse(answer=answer, sources=unique_sources(chunks), language=language)
 
-    return ChatResponse(answer=answer, sources=unique_sources(chunks), language=language)
+    CHAT_CACHE[key] = response
+    return response
 
 
 @app.post("/api/checklist", response_model=ChecklistResponse)
 def checklist(req: ChecklistRequest):
     language = detect_language(req.situation, fallback=req.language)
+
+    key = cache_key(req.situation, language)
+    if key in CHECKLIST_CACHE:
+        print(f"[cache] checklist hit: {req.situation!r}")
+        return CHECKLIST_CACHE[key]
 
     chunks = search(search_query_for(req.situation, language), k=8)
     if not chunks:
@@ -192,4 +218,6 @@ def checklist(req: ChecklistRequest):
             for s in unique_sources(chunks)
         ]
 
-    return ChecklistResponse(items=items)
+    response = ChecklistResponse(items=items)
+    CHECKLIST_CACHE[key] = response
+    return response
