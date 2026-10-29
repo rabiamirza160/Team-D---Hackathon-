@@ -23,6 +23,12 @@ export const COPY = {
     form: "Form / service",
     openLink: "Open official page",
     situationPrefix: "My situation:",
+    nextStepsTitle: "Your next steps",
+    faqTitle: "FAQ",
+    chatTitle: "Chat about your issue",
+    chatPlaceholder: "Ask a question…",
+    chatSend: "Send",
+    formsCount: (n) => `${n} items`,
   },
   fr: {
     brand: "GovernmentGuide AI",
@@ -44,6 +50,12 @@ export const COPY = {
     form: "Formulaire / service",
     openLink: "Ouvrir la page officielle",
     situationPrefix: "Ma situation :",
+    nextStepsTitle: "Vos prochaines étapes",
+    faqTitle: "FAQ",
+    chatTitle: "Discuter de votre situation",
+    chatPlaceholder: "Posez une question…",
+    chatSend: "Envoyer",
+    formsCount: (n) => `${n} éléments`,
   },
 };
 
