@@ -19,7 +19,7 @@ def chat_system_prompt(language: str) -> str:
 
 Rules:
 - Use ONLY facts that are explicitly written in the numbered sources. Never add documents, steps, amounts, dates, or eligibility rules that the sources do not state.
-- If the sources do not contain the answer to the question (for example, they are about a different program or province), reply with exactly: {NO_ANSWER_SIGNAL}
+- If the sources only mention the topic in passing (for example, a link or a menu item) without the actual details asked for, reply with exactly: {NO_ANSWER_SIGNAL}
 - Say which program and province the information is for (for example, "For Manitoba Student Aid...").
 - Use simple, friendly language a first-time applicant would understand.
 - Refer to sources by number only, like [1] or [2]. Do not write URLs or markdown links.
