@@ -3,49 +3,78 @@ import { AnimatePresence } from "motion/react";
 import { ReactLenis } from "lenis/react";
 import QuestionCard from "./QuestionCard";
 import FormResults from "./FormResults";
+import SearchBar from "./SearchBar";
 import {
   COPY,
   QUESTIONS,
   START_QUESTION_ID,
   profileChips,
 } from "../data/questions";
+import { routeQuery } from "../data/queryRouter";
 
-function rebuildProfile(answers) {
-  return Object.values(answers).reduce(
+function rebuildProfile(answers, extraTags = {}) {
+  const fromAnswers = Object.values(answers).reduce(
     (acc, option) => ({ ...acc, ...(option.tags || {}) }),
     {}
   );
+  return { ...fromAnswers, ...extraTags };
 }
 
 /**
- * Answer-driven stacking Q&A. Cards layer in one sticky stage like the
- * ui-layouts Framer Stacking demo (scale + top offset). Answering appends
- * the next card on top in place — no manual scroll between questions.
- * Backtrack via back arrow, drag-right, or Left Arrow key.
+ * Search seeds a path into the stacking Q&A. Cards layer like the
+ * ui-layouts Framer Stacking demo. Backtrack via back arrow, drag-right,
+ * or Left Arrow key.
  */
 export default function StackingGuide({ language, onLanguageChange }) {
   const t = COPY[language] || COPY.en;
 
   const [path, setPath] = useState([START_QUESTION_ID]);
   const [answers, setAnswers] = useState({});
+  const [extraTags, setExtraTags] = useState({});
   const [showResults, setShowResults] = useState(false);
+  const [guideReady, setGuideReady] = useState(false);
 
   const cards = useMemo(
     () => path.map((id) => QUESTIONS[id]).filter(Boolean),
     [path]
   );
 
-  const profile = useMemo(() => rebuildProfile(answers), [answers]);
+  const profile = useMemo(
+    () => rebuildProfile(answers, extraTags),
+    [answers, extraTags]
+  );
   const chips = useMemo(() => profileChips(profile), [profile]);
 
   const canGoBack =
     showResults || path.length > 1 || Boolean(answers[path[0]]);
+
+  const scrollToQuestions = () => {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.getElementById("questions")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 80);
+    });
+  };
+
+  const handleSearch = useCallback((query) => {
+    const routed = routeQuery(query);
+    setPath(routed.path);
+    setAnswers(routed.answers);
+    setExtraTags(routed.extraTags || {});
+    setShowResults(false);
+    setGuideReady(true);
+    scrollToQuestions();
+  }, []);
 
   const handleSelect = useCallback(
     (questionId, option) => {
       if (answers[questionId]) return;
 
       setAnswers((prev) => ({ ...prev, [questionId]: option }));
+      setGuideReady(true);
 
       if (option.next === "results") {
         setShowResults(true);
@@ -106,7 +135,9 @@ export default function StackingGuide({ language, onLanguageChange }) {
   const handleRestart = () => {
     setPath([START_QUESTION_ID]);
     setAnswers({});
+    setExtraTags({});
     setShowResults(false);
+    setGuideReady(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -153,23 +184,64 @@ export default function StackingGuide({ language, onLanguageChange }) {
             <p className="hero__brand">{t.brand}</p>
             <h1 className="hero__title">
               {language === "fr"
-                ? "Le bon formulaire, sans le labyrinthe."
-                : "The right form, without the maze."}
+                ? "Aide aux étudiants et EIA, sans le labyrinthe."
+                : "Student Aid and EIA, without the maze."}
             </h1>
             <p className="hero__lede">{t.tagline}</p>
+            <SearchBar language={language} copy={t} onSearch={handleSearch} />
           </div>
-          <a
-            className="hero__scroll"
-            href="#questions"
-            aria-label={
-              language === "fr" ? "Défiler vers le bas" : "Scroll for more"
-            }
-          >
-            <span className="hero__scroll-arrow" aria-hidden>
-              ↓
-            </span>
-          </a>
+          {guideReady && (
+            <a
+              className="hero__scroll"
+              href="#questions"
+              aria-label={
+                language === "fr" ? "Défiler vers le bas" : "Scroll for more"
+              }
+            >
+              <span className="hero__scroll-arrow" aria-hidden>
+                ↓
+              </span>
+            </a>
+          )}
         </section>
+
+        {guideReady && (
+          <section id="questions" className="stack-stage">
+            <div className="stack-stage__frame">
+              <AnimatePresence initial={false}>
+                {cards.map((card, i) => {
+                  const locale = card[language] || card.en;
+                  const targetScale = 1 - (cards.length - 1 - i) * 0.05;
+                  const selected = answers[card.id];
+                  const isTop = i === cards.length - 1;
+
+                  return (
+                    <QuestionCard
+                      key={card.id}
+                      i={i}
+                      total={cards.length}
+                      color={card.color}
+                      accent={card.accent}
+                      title={locale.title}
+                      prompt={locale.prompt}
+                      options={locale.options}
+                      selectedId={selected?.id}
+                      onSelect={(opt) => handleSelect(card.id, opt)}
+                      onBack={handleBack}
+                      canGoBack={canGoBack && isTop}
+                      backLabel={t.back}
+                      stepLabel={t.stepLabel}
+                      answeredLabel={t.answered}
+                      scale={targetScale}
+                      isTop={isTop}
+                      interactive={isTop && !showResults && !selected}
+                    />
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          </section>
+        )}
 
         {chips.length > 0 && (
           <aside className="profile-strip" aria-label={t.profileLabel}>
@@ -183,42 +255,6 @@ export default function StackingGuide({ language, onLanguageChange }) {
             </ul>
           </aside>
         )}
-
-        <section id="questions" className="stack-stage">
-          <div className="stack-stage__frame">
-            <AnimatePresence initial={false}>
-              {cards.map((card, i) => {
-                const locale = card[language] || card.en;
-                const targetScale = 1 - (cards.length - 1 - i) * 0.05;
-                const selected = answers[card.id];
-                const isTop = i === cards.length - 1;
-
-                return (
-                  <QuestionCard
-                    key={card.id}
-                    i={i}
-                    total={cards.length}
-                    color={card.color}
-                    accent={card.accent}
-                    title={locale.title}
-                    prompt={locale.prompt}
-                    options={locale.options}
-                    selectedId={selected?.id}
-                    onSelect={(opt) => handleSelect(card.id, opt)}
-                    onBack={handleBack}
-                    canGoBack={canGoBack && isTop}
-                    backLabel={t.back}
-                    stepLabel={t.stepLabel}
-                    answeredLabel={t.answered}
-                    scale={targetScale}
-                    isTop={isTop}
-                    interactive={isTop && !showResults && !selected}
-                  />
-                );
-              })}
-            </AnimatePresence>
-          </div>
-        </section>
 
         {showResults && (
           <div id="results">

@@ -126,12 +126,12 @@ button {
 .hero__content {
   position: relative;
   z-index: 2;
-  max-width: 36rem;
+  max-width: 40rem;
   padding: 28px 28px 28px 0;
   background: linear-gradient(
     90deg,
-    rgba(244, 248, 250, 0.92) 0%,
-    rgba(244, 248, 250, 0.72) 70%,
+    rgba(244, 248, 250, 0.94) 0%,
+    rgba(244, 248, 250, 0.78) 70%,
     transparent 100%
   );
 }
@@ -163,7 +163,109 @@ button {
   line-height: 1.55;
   color: rgba(11, 31, 42, 0.72);
   max-width: 28rem;
+  margin-bottom: 22px;
   animation: rise 0.8s ease 0.16s both;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.search-bar {
+  position: relative;
+  z-index: 3;
+  width: min(34rem, 100%);
+  animation: rise 0.8s ease 0.22s both;
+}
+
+.search-bar__form {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(10, 77, 104, 0.18);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 14px 36px rgba(6, 47, 64, 0.12);
+}
+
+.search-bar__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  outline: none;
+}
+
+.search-bar__input::placeholder {
+  color: rgba(11, 31, 42, 0.45);
+}
+
+.search-bar__submit {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  border: none;
+  background: var(--lake);
+  color: white;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.search-bar__submit:hover {
+  background: var(--lake-deep);
+  transform: translateY(-1px);
+}
+
+.search-bar__icon {
+  display: block;
+}
+
+.search-bar__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.search-bar__hint {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(11, 31, 42, 0.55);
+}
+
+.search-bar__chip {
+  border: 1px solid rgba(10, 77, 104, 0.2);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--lake-deep);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.search-bar__chip:hover {
+  background: white;
+  border-color: var(--lake);
 }
 
 .hero__scroll {
@@ -229,26 +331,22 @@ button {
   animation: stack-breathe 3.2s ease-in-out infinite;
 }
 
-/* ——— Profile strip (overlay — does not push the stack) ——— */
+/* ——— Profile strip (below the card stack) ——— */
 
 .profile-strip {
-  position: fixed;
-  top: 58px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 35;
+  position: relative;
+  z-index: 1;
   width: min(920px, calc(100% - 32px));
-  padding: 12px 20px;
+  margin: 0 auto 48px;
+  padding: 16px 20px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 16px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(10, 77, 104, 0.12);
   border-radius: 14px;
-  backdrop-filter: blur(10px);
   box-shadow: 0 8px 24px rgba(6, 47, 64, 0.08);
-  pointer-events: none;
 }
 
 .profile-strip__label {
@@ -688,6 +786,6 @@ button {
   }
 
   .profile-strip {
-    top: 52px;
+    margin-bottom: 36px;
   }
 }

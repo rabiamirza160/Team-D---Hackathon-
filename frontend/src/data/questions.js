@@ -1,10 +1,15 @@
-// Branching question tree for the stacking-card guide.
-// Each answer updates the profile and points to the next question id (or "results").
+// Branching question tree scoped to services present in /data:
+// - Student Aid (Manitoba + Saskatchewan)
+// - Employment & Income Assistance / income support (Manitoba EIA)
 
 export const COPY = {
   en: {
     brand: "GovernmentGuide AI",
-    tagline: "Answer a few questions. We’ll match you to the right Manitoba forms.",
+    tagline:
+      "Ask about Student Aid or Employment & Income Assistance, then answer a few follow-ups so we can match the right forms.",
+    searchPlaceholder: "Ask a question — e.g. student aid, EIA, rent assist…",
+    searchSubmit: "Find forms",
+    searchHint: "Or try:",
     profileLabel: "Your profile",
     stepLabel: "Question",
     answered: "Answered",
@@ -21,7 +26,11 @@ export const COPY = {
   },
   fr: {
     brand: "GovernmentGuide AI",
-    tagline: "Répondez à quelques questions. Nous vous orienterons vers les bons formulaires du Manitoba.",
+    tagline:
+      "Posez une question sur l’aide aux étudiants ou l’aide à l’emploi et au revenu, puis répondez à quelques suivis pour trouver les bons formulaires.",
+    searchPlaceholder: "Posez une question — ex. aide aux étudiants, EIA, aide au loyer…",
+    searchSubmit: "Trouver",
+    searchHint: "Ou essayez :",
     profileLabel: "Votre profil",
     stepLabel: "Question",
     answered: "Répondu",
@@ -45,204 +54,438 @@ export const QUESTIONS = {
     accent: "#E8A838",
     en: {
       title: "What do you need help with?",
-      prompt: "Pick the closest match — we’ll ask follow-ups from here.",
+      prompt:
+        "Right now we cover Student Aid and Employment & Income Assistance (EIA) — the services in our current data.",
       options: [
-        { id: "health", label: "Health card or coverage", next: "health_status", tags: { topic: "health card" } },
-        { id: "id", label: "ID documents (SIN, passport…)", next: "id_type", tags: { topic: "identification" } },
-        { id: "ei", label: "Employment / EI benefits", next: "ei_status", tags: { topic: "employment insurance" } },
-        { id: "move", label: "I just moved to Manitoba", next: "move_from", tags: { topic: "new resident", event: "moved to Manitoba" } },
-        { id: "unsure", label: "Not sure — guide me", next: "life_event", tags: { topic: "general guidance" } },
+        {
+          id: "student",
+          label: "Student Aid (loans, grants, bursaries)",
+          next: "student_province",
+          tags: { topic: "student aid" },
+        },
+        {
+          id: "eia",
+          label: "Employment & Income Assistance (EIA)",
+          next: "eia_goal",
+          tags: { topic: "employment and income assistance" },
+        },
       ],
     },
     fr: {
       title: "De quoi avez-vous besoin ?",
-      prompt: "Choisissez l’option la plus proche — nous poserons des questions de suivi.",
+      prompt:
+        "Pour l’instant, nous couvrons l’aide aux étudiants et l’aide à l’emploi et au revenu (EIA) — les services de nos données actuelles.",
       options: [
-        { id: "health", label: "Carte santé ou couverture", next: "health_status", tags: { topic: "health card" } },
-        { id: "id", label: "Pièces d’identité (NAS, passeport…)", next: "id_type", tags: { topic: "identification" } },
-        { id: "ei", label: "Emploi / prestations d’AE", next: "ei_status", tags: { topic: "employment insurance" } },
-        { id: "move", label: "Je viens d’arriver au Manitoba", next: "move_from", tags: { topic: "new resident", event: "moved to Manitoba" } },
-        { id: "unsure", label: "Je ne suis pas sûr — guidez-moi", next: "life_event", tags: { topic: "general guidance" } },
+        {
+          id: "student",
+          label: "Aide aux étudiants (prêts, bourses, subventions)",
+          next: "student_province",
+          tags: { topic: "student aid" },
+        },
+        {
+          id: "eia",
+          label: "Aide à l’emploi et au revenu (EIA)",
+          next: "eia_goal",
+          tags: { topic: "employment and income assistance" },
+        },
       ],
     },
   },
 
-  health_status: {
-    id: "health_status",
-    color: "#146C7A",
-    accent: "#7EC8C4",
-    en: {
-      title: "What’s your health coverage situation?",
-      prompt: "This helps us point to the right Manitoba Health forms.",
-      options: [
-        { id: "new", label: "I need a new health card", next: "household", tags: { intent: "new health card" } },
-        { id: "replace", label: "Replace a lost or damaged card", next: "household", tags: { intent: "replace health card" } },
-        { id: "update", label: "Update my address or details", next: "household", tags: { intent: "update health registration" } },
-        { id: "dependents", label: "Add family members / dependents", next: "household", tags: { intent: "add dependents to health coverage" } },
-      ],
-    },
-    fr: {
-      title: "Quelle est votre situation de couverture santé ?",
-      prompt: "Cela nous aide à trouver les bons formulaires de Santé Manitoba.",
-      options: [
-        { id: "new", label: "J’ai besoin d’une nouvelle carte", next: "household", tags: { intent: "new health card" } },
-        { id: "replace", label: "Remplacer une carte perdue ou endommagée", next: "household", tags: { intent: "replace health card" } },
-        { id: "update", label: "Mettre à jour mon adresse ou mes infos", next: "household", tags: { intent: "update health registration" } },
-        { id: "dependents", label: "Ajouter des membres de la famille", next: "household", tags: { intent: "add dependents to health coverage" } },
-      ],
-    },
-  },
-
-  id_type: {
-    id: "id_type",
+  student_province: {
+    id: "student_province",
     color: "#1B4F72",
     accent: "#F0C75E",
     en: {
-      title: "Which document are you after?",
-      prompt: "We’ll tailor the checklist to that service.",
+      title: "Which province’s student aid?",
+      prompt: "We have Manitoba Student Aid and Saskatchewan Student Aid in our data.",
       options: [
-        { id: "sin", label: "Social Insurance Number (SIN)", next: "household", tags: { document: "SIN" } },
-        { id: "passport", label: "Passport", next: "household", tags: { document: "passport" } },
-        { id: "licence", label: "Driver’s licence / MPI", next: "household", tags: { document: "driver licence" } },
-        { id: "vital", label: "Birth / marriage / vital stats", next: "household", tags: { document: "vital statistics" } },
+        {
+          id: "mb",
+          label: "Manitoba Student Aid",
+          next: "student_goal",
+          tags: { province: "Manitoba", program: "Manitoba Student Aid" },
+        },
+        {
+          id: "sk",
+          label: "Saskatchewan Student Aid",
+          next: "student_goal",
+          tags: { province: "Saskatchewan", program: "Saskatchewan Student Aid" },
+        },
       ],
     },
     fr: {
-      title: "Quel document cherchez-vous ?",
-      prompt: "Nous adapterons la liste à ce service.",
+      title: "Aide aux étudiants de quelle province ?",
+      prompt:
+        "Nous avons l’Aide aux étudiants du Manitoba et l’Aide aux étudiants de la Saskatchewan.",
       options: [
-        { id: "sin", label: "Numéro d’assurance sociale (NAS)", next: "household", tags: { document: "SIN" } },
-        { id: "passport", label: "Passeport", next: "household", tags: { document: "passport" } },
-        { id: "licence", label: "Permis de conduire / MPI", next: "household", tags: { document: "driver licence" } },
-        { id: "vital", label: "Naissance / mariage / statistiques de l’état civil", next: "household", tags: { document: "vital statistics" } },
+        {
+          id: "mb",
+          label: "Aide aux étudiants du Manitoba",
+          next: "student_goal",
+          tags: { province: "Manitoba", program: "Manitoba Student Aid" },
+        },
+        {
+          id: "sk",
+          label: "Aide aux étudiants de la Saskatchewan",
+          next: "student_goal",
+          tags: { province: "Saskatchewan", program: "Saskatchewan Student Aid" },
+        },
       ],
     },
   },
 
-  ei_status: {
-    id: "ei_status",
-    color: "#2C5F2D",
-    accent: "#97BC62",
+  student_goal: {
+    id: "student_goal",
+    color: "#146C7A",
+    accent: "#7EC8C4",
     en: {
-      title: "Where are you in the EI process?",
-      prompt: "A little context goes a long way for the right forms.",
+      title: "Where are you in the student aid process?",
+      prompt: "This points us at apply, manage, or repay pages.",
       options: [
-        { id: "apply", label: "I need to apply for benefits", next: "household", tags: { intent: "apply for EI" } },
-        { id: "claim", label: "I have an open claim / report hours", next: "household", tags: { intent: "report EI claim" } },
-        { id: "appeal", label: "I want to appeal a decision", next: "household", tags: { intent: "appeal EI decision" } },
-        { id: "info", label: "I just need eligibility info", next: "household", tags: { intent: "EI eligibility information" } },
+        {
+          id: "plan",
+          label: "Planning / checking if I qualify",
+          next: "student_situation",
+          tags: { intent: "plan and check eligibility for student aid" },
+        },
+        {
+          id: "apply",
+          label: "Applying — what do I need?",
+          next: "student_situation",
+          tags: { intent: "apply for student aid" },
+        },
+        {
+          id: "inschool",
+          label: "Already in school / managing funds",
+          next: "student_situation",
+          tags: { intent: "manage student aid while in school" },
+        },
+        {
+          id: "repay",
+          label: "Repaying loans or loan forgiveness",
+          next: "student_situation",
+          tags: { intent: "repay student loans or loan forgiveness" },
+        },
       ],
     },
     fr: {
-      title: "Où en êtes-vous dans le processus d’AE ?",
-      prompt: "Un peu de contexte nous aide à trouver les bons formulaires.",
+      title: "Où en êtes-vous dans le processus d’aide aux étudiants ?",
+      prompt: "Cela oriente vers les pages de demande, de gestion ou de remboursement.",
       options: [
-        { id: "apply", label: "Je dois présenter une demande", next: "household", tags: { intent: "apply for EI" } },
-        { id: "claim", label: "J’ai une demande ouverte / déclarer des heures", next: "household", tags: { intent: "report EI claim" } },
-        { id: "appeal", label: "Je veux contester une décision", next: "household", tags: { intent: "appeal EI decision" } },
-        { id: "info", label: "J’ai besoin d’info sur l’admissibilité", next: "household", tags: { intent: "EI eligibility information" } },
+        {
+          id: "plan",
+          label: "Planification / vérifier mon admissibilité",
+          next: "student_situation",
+          tags: { intent: "plan and check eligibility for student aid" },
+        },
+        {
+          id: "apply",
+          label: "Je présente une demande — de quoi ai-je besoin ?",
+          next: "student_situation",
+          tags: { intent: "apply for student aid" },
+        },
+        {
+          id: "inschool",
+          label: "Déjà aux études / gérer mes fonds",
+          next: "student_situation",
+          tags: { intent: "manage student aid while in school" },
+        },
+        {
+          id: "repay",
+          label: "Rembourser un prêt ou exonération",
+          next: "student_situation",
+          tags: { intent: "repay student loans or loan forgiveness" },
+        },
       ],
     },
   },
 
-  move_from: {
-    id: "move_from",
-    color: "#5C3D2E",
-    accent: "#E0C097",
-    en: {
-      title: "Where did you move from?",
-      prompt: "Coverage and ID steps differ for newcomers vs. interprovincial moves.",
-      options: [
-        { id: "province", label: "Another Canadian province", next: "household", tags: { origin: "another Canadian province" } },
-        { id: "intl", label: "Another country", next: "household", tags: { origin: "another country" } },
-        { id: "within", label: "Within Manitoba (new address)", next: "household", tags: { origin: "within Manitoba" } },
-      ],
-    },
-    fr: {
-      title: "D’où avez-vous déménagé ?",
-      prompt: "Les étapes diffèrent pour les nouveaux arrivants et les déménagements interprovinciaux.",
-      options: [
-        { id: "province", label: "Une autre province canadienne", next: "household", tags: { origin: "another Canadian province" } },
-        { id: "intl", label: "Un autre pays", next: "household", tags: { origin: "another country" } },
-        { id: "within", label: "Au Manitoba (nouvelle adresse)", next: "household", tags: { origin: "within Manitoba" } },
-      ],
-    },
-  },
-
-  life_event: {
-    id: "life_event",
-    color: "#3D5A80",
-    accent: "#98C1D9",
-    en: {
-      title: "What changed recently?",
-      prompt: "Life events often unlock a bundle of related forms.",
-      options: [
-        { id: "job", label: "Lost or changed jobs", next: "household", tags: { event: "job change" } },
-        { id: "family", label: "New baby or family change", next: "household", tags: { event: "family change" } },
-        { id: "student", label: "Starting school / student aid", next: "household", tags: { event: "student", topic: "student aid" } },
-        { id: "retired", label: "Retiring or turning 65", next: "household", tags: { event: "retirement" } },
-      ],
-    },
-    fr: {
-      title: "Qu’est-ce qui a changé récemment ?",
-      prompt: "Les événements de vie ouvrent souvent plusieurs formulaires liés.",
-      options: [
-        { id: "job", label: "Perte ou changement d’emploi", next: "household", tags: { event: "job change" } },
-        { id: "family", label: "Nouveau bébé ou changement familial", next: "household", tags: { event: "family change" } },
-        { id: "student", label: "Début des études / aide aux étudiants", next: "household", tags: { event: "student", topic: "student aid" } },
-        { id: "retired", label: "Retraite ou 65 ans", next: "household", tags: { event: "retirement" } },
-      ],
-    },
-  },
-
-  household: {
-    id: "household",
+  student_situation: {
+    id: "student_situation",
     color: "#244855",
     accent: "#E64833",
     en: {
-      title: "Who is this for?",
-      prompt: "Household size changes which documents you’ll need.",
+      title: "Anything else about your situation?",
+      prompt: "Optional context that often changes which forms apply.",
       options: [
-        { id: "self", label: "Just me", next: "residency", tags: { household: "myself only" } },
-        { id: "partner", label: "Me and a partner", next: "residency", tags: { household: "myself and a partner" } },
-        { id: "kids", label: "Me and kids / dependents", next: "residency", tags: { household: "myself and dependents" } },
-        { id: "family", label: "Whole family", next: "residency", tags: { household: "whole family" } },
+        {
+          id: "fulltime",
+          label: "Full-time student",
+          next: "results",
+          tags: { student_status: "full-time student" },
+        },
+        {
+          id: "parttime",
+          label: "Part-time student",
+          next: "results",
+          tags: { student_status: "part-time student" },
+        },
+        {
+          id: "disability",
+          label: "I have a disability / need related supports",
+          next: "results",
+          tags: { student_status: "student with disability supports" },
+        },
+        {
+          id: "general",
+          label: "No extras — just the basics",
+          next: "results",
+          tags: { student_status: "general student aid inquiry" },
+        },
+      ],
+    },
+    fr: {
+      title: "Autre chose à propos de votre situation ?",
+      prompt: "Contexte optionnel qui change souvent les formulaires applicables.",
+      options: [
+        {
+          id: "fulltime",
+          label: "Études à temps plein",
+          next: "results",
+          tags: { student_status: "full-time student" },
+        },
+        {
+          id: "parttime",
+          label: "Études à temps partiel",
+          next: "results",
+          tags: { student_status: "part-time student" },
+        },
+        {
+          id: "disability",
+          label: "J’ai un handicap / besoin de soutiens liés",
+          next: "results",
+          tags: { student_status: "student with disability supports" },
+        },
+        {
+          id: "general",
+          label: "Rien de plus — juste l’essentiel",
+          next: "results",
+          tags: { student_status: "general student aid inquiry" },
+        },
+      ],
+    },
+  },
+
+  eia_goal: {
+    id: "eia_goal",
+    color: "#2C5F2D",
+    accent: "#97BC62",
+    en: {
+      title: "What do you need from Employment & Income Assistance?",
+      prompt: "Our data covers Manitoba EIA, Rent Assist, and related employment supports.",
+      options: [
+        {
+          id: "apply",
+          label: "Apply for EIA / income assistance",
+          next: "eia_household",
+          tags: { intent: "apply for employment and income assistance" },
+        },
+        {
+          id: "rent",
+          label: "Rent Assist or housing help",
+          next: "eia_household",
+          tags: { intent: "rent assist application" },
+        },
+        {
+          id: "work",
+          label: "Finding work / employment supports",
+          next: "eia_household",
+          tags: { intent: "finding work employment supports" },
+        },
+        {
+          id: "disability",
+          label: "Disability supports",
+          next: "eia_household",
+          tags: { intent: "Manitoba supports for persons with disabilities" },
+        },
+        {
+          id: "info",
+          label: "General eligibility / program info",
+          next: "eia_household",
+          tags: { intent: "EIA eligibility information" },
+        },
+      ],
+    },
+    fr: {
+      title: "De quoi avez-vous besoin concernant l’aide à l’emploi et au revenu ?",
+      prompt:
+        "Nos données couvrent l’EIA du Manitoba, l’aide au loyer et les soutiens à l’emploi liés.",
+      options: [
+        {
+          id: "apply",
+          label: "Demander l’EIA / l’aide au revenu",
+          next: "eia_household",
+          tags: { intent: "apply for employment and income assistance" },
+        },
+        {
+          id: "rent",
+          label: "Aide au loyer ou logement",
+          next: "eia_household",
+          tags: { intent: "rent assist application" },
+        },
+        {
+          id: "work",
+          label: "Trouver un emploi / soutiens à l’emploi",
+          next: "eia_household",
+          tags: { intent: "finding work employment supports" },
+        },
+        {
+          id: "disability",
+          label: "Soutiens pour personnes handicapées",
+          next: "eia_household",
+          tags: { intent: "Manitoba supports for persons with disabilities" },
+        },
+        {
+          id: "info",
+          label: "Admissibilité / info générale sur le programme",
+          next: "eia_household",
+          tags: { intent: "EIA eligibility information" },
+        },
+      ],
+    },
+  },
+
+  eia_household: {
+    id: "eia_household",
+    color: "#5C3D2E",
+    accent: "#E0C097",
+    en: {
+      title: "Who is this for?",
+      prompt: "Household size often changes EIA and Rent Assist forms.",
+      options: [
+        {
+          id: "self",
+          label: "Just me",
+          next: "eia_residency",
+          tags: { household: "myself only" },
+        },
+        {
+          id: "partner",
+          label: "Me and a partner",
+          next: "eia_residency",
+          tags: { household: "myself and a partner" },
+        },
+        {
+          id: "kids",
+          label: "Me and kids / dependents",
+          next: "eia_residency",
+          tags: { household: "myself and dependents" },
+        },
+        {
+          id: "family",
+          label: "Whole family",
+          next: "eia_residency",
+          tags: { household: "whole family" },
+        },
       ],
     },
     fr: {
       title: "Pour qui est-ce ?",
-      prompt: "La taille du ménage change les documents requis.",
+      prompt: "La taille du ménage change souvent les formulaires EIA et d’aide au loyer.",
       options: [
-        { id: "self", label: "Seulement moi", next: "residency", tags: { household: "myself only" } },
-        { id: "partner", label: "Moi et un conjoint", next: "residency", tags: { household: "myself and a partner" } },
-        { id: "kids", label: "Moi et des enfants / personnes à charge", next: "residency", tags: { household: "myself and dependents" } },
-        { id: "family", label: "Toute la famille", next: "residency", tags: { household: "whole family" } },
+        {
+          id: "self",
+          label: "Seulement moi",
+          next: "eia_residency",
+          tags: { household: "myself only" },
+        },
+        {
+          id: "partner",
+          label: "Moi et un conjoint",
+          next: "eia_residency",
+          tags: { household: "myself and a partner" },
+        },
+        {
+          id: "kids",
+          label: "Moi et des enfants / personnes à charge",
+          next: "eia_residency",
+          tags: { household: "myself and dependents" },
+        },
+        {
+          id: "family",
+          label: "Toute la famille",
+          next: "eia_residency",
+          tags: { household: "whole family" },
+        },
       ],
     },
   },
 
-  residency: {
-    id: "residency",
+  eia_residency: {
+    id: "eia_residency",
     color: "#0F2C3A",
     accent: "#F4A261",
     en: {
-      title: "How long have you lived in Manitoba?",
-      prompt: "Waiting periods and eligibility often hinge on this.",
+      title: "Are you a Manitoba resident?",
+      prompt: "EIA and Rent Assist in our data are Manitoba programs.",
       options: [
-        { id: "new", label: "Less than 3 months", next: "results", tags: { residency: "less than 3 months in Manitoba" } },
-        { id: "settling", label: "3 to 12 months", next: "results", tags: { residency: "3 to 12 months in Manitoba" } },
-        { id: "resident", label: "More than a year", next: "results", tags: { residency: "more than a year in Manitoba" } },
-        { id: "visitor", label: "I’m visiting / not a resident yet", next: "results", tags: { residency: "visitor, not yet a resident" } },
+        {
+          id: "yes",
+          label: "Yes — I live in Manitoba",
+          next: "results",
+          tags: {
+            province: "Manitoba",
+            residency: "Manitoba resident",
+            program: "Employment and Income Assistance",
+          },
+        },
+        {
+          id: "moving",
+          label: "Moving to Manitoba soon",
+          next: "results",
+          tags: {
+            province: "Manitoba",
+            residency: "moving to Manitoba",
+            program: "Employment and Income Assistance",
+          },
+        },
+        {
+          id: "unsure",
+          label: "Not sure / need general info",
+          next: "results",
+          tags: {
+            province: "Manitoba",
+            residency: "residency unclear",
+            program: "Employment and Income Assistance",
+          },
+        },
       ],
     },
     fr: {
-      title: "Depuis combien de temps vivez-vous au Manitoba ?",
-      prompt: "Les délais d’attente et l’admissibilité en dépendent souvent.",
+      title: "Êtes-vous résident du Manitoba ?",
+      prompt: "L’EIA et l’aide au loyer dans nos données sont des programmes du Manitoba.",
       options: [
-        { id: "new", label: "Moins de 3 mois", next: "results", tags: { residency: "less than 3 months in Manitoba" } },
-        { id: "settling", label: "De 3 à 12 mois", next: "results", tags: { residency: "3 to 12 months in Manitoba" } },
-        { id: "resident", label: "Plus d’un an", next: "results", tags: { residency: "more than a year in Manitoba" } },
-        { id: "visitor", label: "Je visite / pas encore résident", next: "results", tags: { residency: "visitor, not yet a resident" } },
+        {
+          id: "yes",
+          label: "Oui — j’habite au Manitoba",
+          next: "results",
+          tags: {
+            province: "Manitoba",
+            residency: "Manitoba resident",
+            program: "Employment and Income Assistance",
+          },
+        },
+        {
+          id: "moving",
+          label: "Je déménage bientôt au Manitoba",
+          next: "results",
+          tags: {
+            province: "Manitoba",
+            residency: "moving to Manitoba",
+            program: "Employment and Income Assistance",
+          },
+        },
+        {
+          id: "unsure",
+          label: "Pas sûr / besoin d’info générale",
+          next: "results",
+          tags: {
+            province: "Manitoba",
+            residency: "residency unclear",
+            program: "Employment and Income Assistance",
+          },
+        },
       ],
     },
   },
@@ -253,18 +496,21 @@ export const START_QUESTION_ID = "need";
 /** Build a plain-language situation string for POST /api/checklist */
 export function buildSituation(profile, language = "en") {
   const prefix = COPY[language]?.situationPrefix || COPY.en.situationPrefix;
-  const parts = Object.entries(profile)
+  const { query, ...rest } = profile;
+  const parts = Object.entries(rest)
     .filter(([, v]) => v)
     .map(([key, value]) => `${key}: ${value}`);
-  return `${prefix} ${parts.join("; ")}.`;
+  const queryPart = query ? `Asked: "${query}". ` : "";
+  return `${prefix} ${queryPart}${parts.join("; ")}.`;
 }
 
 const CHIP_LABELS = {
+  query: "Asked",
   topic: "Topic",
   intent: "Goal",
-  document: "Document",
-  event: "Event",
-  origin: "From",
+  program: "Program",
+  province: "Province",
+  student_status: "Student",
   household: "For",
   residency: "Residency",
 };
