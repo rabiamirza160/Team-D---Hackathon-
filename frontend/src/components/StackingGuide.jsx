@@ -46,7 +46,11 @@ export default function StackingGuide({ language, onLanguageChange }) {
   const chips = useMemo(() => profileChips(profile), [profile]);
 
   const canGoBack =
-    showResults || path.length > 1 || Boolean(answers[path[0]]);
+    showResults ||
+    path.length > 1 ||
+    Boolean(answers[path[0]]) ||
+    // Search already chose Student Aid / EIA — allow backing into that chooser
+    (Boolean(answers.need) && path[0] !== START_QUESTION_ID);
 
   const scrollToQuestions = () => {
     requestAnimationFrame(() => {
@@ -117,7 +121,18 @@ export default function StackingGuide({ language, onLanguageChange }) {
     }
 
     if (path.length <= 1) {
-      if (answers[path[0]]) {
+      const currentId = path[0];
+      if (answers[currentId]) {
+        setAnswers((prev) => {
+          const next = { ...prev };
+          delete next[currentId];
+          return next;
+        });
+        return;
+      }
+      // Undo search-seeded topic and let them pick Student Aid vs EIA
+      if (answers.need && currentId !== START_QUESTION_ID) {
+        setPath([START_QUESTION_ID]);
         setAnswers({});
       }
       return;

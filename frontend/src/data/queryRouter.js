@@ -18,6 +18,10 @@ function route(path, answerEntries, extraTags = {}) {
 /**
  * Map a free-text query to a seeded stack path scoped to /data services:
  * Student Aid (MB/SK) and Manitoba Employment & Income Assistance (EIA).
+ *
+ * When the query already implies Student Aid or EIA, "need" is stored in
+ * answers for the profile but omitted from the visible path so the first
+ * card is a real follow-up.
  */
 export function routeQuery(rawQuery) {
   const query = (rawQuery || "").trim();
@@ -76,7 +80,7 @@ export function routeQuery(rawQuery) {
     if (provinceId && goalId) {
       return {
         ...route(
-          ["need", "student_province", "student_goal", "student_situation"],
+          ["student_province", "student_goal", "student_situation"],
           [
             ["need", "student"],
             ["student_province", provinceId],
@@ -91,7 +95,7 @@ export function routeQuery(rawQuery) {
     if (provinceId) {
       return {
         ...route(
-          ["need", "student_province", "student_goal"],
+          ["student_province", "student_goal"],
           [
             ["need", "student"],
             ["student_province", provinceId],
@@ -102,19 +106,12 @@ export function routeQuery(rawQuery) {
       };
     }
 
-    if (goalId) {
-      // Province still needed — stop at province after seeding topic + later goal isn't pre-answered
-      return {
-        ...route(["need", "student_province"], [["need", "student"]], {
-          ...extraTags,
-          intent_hint: goalId,
-        }),
-        query,
-      };
-    }
-
     return {
-      ...route(["need", "student_province"], [["need", "student"]], extraTags),
+      ...route(
+        ["student_province"],
+        [["need", "student"]],
+        goalId ? { ...extraTags, intent_hint: goalId } : extraTags
+      ),
       query,
     };
   }
@@ -138,7 +135,7 @@ export function routeQuery(rawQuery) {
     if (goalId) {
       return {
         ...route(
-          ["need", "eia_goal", "eia_household"],
+          ["eia_goal", "eia_household"],
           [
             ["need", "eia"],
             ["eia_goal", goalId],
@@ -150,7 +147,7 @@ export function routeQuery(rawQuery) {
     }
 
     return {
-      ...route(["need", "eia_goal"], [["need", "eia"]], extraTags),
+      ...route(["eia_goal"], [["need", "eia"]], extraTags),
       query,
     };
   }
