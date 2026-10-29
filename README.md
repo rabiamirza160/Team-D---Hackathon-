@@ -91,12 +91,16 @@ Frontend and backend both build against this. **Change it only after posting in 
 
 ```
 POST /api/chat
-  request:  { "message": "...", "language": "en" | "fr" }   ← UI toggle, used as fallback only
+  request:  { "message": "...", "language": "en" | "fr" }   ← UI toggle, fallback only
   response: { "answer": "...", "sources": [{ "title": "...", "url": "..." }], "language": "en" | "fr" }
 
 POST /api/checklist
-  request:  { "situation": "I just moved to Winnipeg with two kids" }
+  request:  { "situation": "...", "language": "en" | "fr" }  ← language optional, fallback only
   response: { "items": [{ "task": "...", "form": "...", "url": "..." }] }
+
+POST /api/detect-language
+  request:  { "text": "...", "fallback": "en" | "fr" }       ← fallback optional
+  response: { "language": "en" | "fr" }
 ```
 
 **Language:** answers follow the language of the question. The toggle (which defaults to the browser language) is only used when the question is too short to tell.
