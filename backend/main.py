@@ -102,14 +102,28 @@ def unique_sources(chunks: list[dict]) -> list[Source]:
     return sources
 
 
-def parse_checklist(raw: str) -> list[ChecklistItem]:
-    """Parse the LLM's JSON output. Returns [] if it isn't valid."""
+def parse_checklist(raw: str, valid_urls: set[str]) -> list[ChecklistItem]:
+    """
+    Parse the LLM's JSON output and keep only items that link to a real source page.
+    Small models sometimes invent plausible-looking URLs; those are dropped.
+    Returns [] if the output isn't valid JSON or nothing survives.
+    """
     text = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     try:
         data = json.loads(text)
-        return [ChecklistItem(**item) for item in data]
+        items = [ChecklistItem(**item) for item in data]
     except (json.JSONDecodeError, TypeError, ValueError):
         return []
+
+    kept = []
+    for item in items:
+        if item.url not in valid_urls:
+            print(f"[checklist] dropped item with made-up link: {item.url}")
+            continue
+        if item.form.strip().lower() in ("none", "n/a", "null", "-"):
+            item.form = ""
+        kept.append(item)
+    return kept
 
 
 # ---------- Endpoints ----------
@@ -144,36 +158,4 @@ def chat(req: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"LLM error: {e}")
 
-    # The model signals when the sources don't answer the question
-    if NO_ANSWER_SIGNAL in answer:
-        return ChatResponse(answer=NO_ANSWER[language], sources=[], language=language)
-
-    return ChatResponse(answer=answer, sources=unique_sources(chunks), language=language)
-
-
-@app.post("/api/checklist", response_model=ChecklistResponse)
-def checklist(req: ChecklistRequest):
-    language = detect_language(req.situation, fallback=req.language)
-
-    chunks = search(search_query_for(req.situation, language), k=8)
-    if not chunks:
-        return ChecklistResponse(items=[])
-
-    try:
-        raw = ask_llm(
-            checklist_system_prompt(language),
-            build_checklist_prompt(req.situation, chunks),
-        )
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
-
-    items = parse_checklist(raw)
-
-    # Fallback: if the LLM didn't return valid JSON, list the relevant forms directly
-    if not items:
-        items = [
-            ChecklistItem(task=f"Review: {c['title']}", form=c["title"], url=c["url"])
-            for c in chunks
-        ]
-
-    return ChecklistResponse(items=items)
+    # The model signals when the sources
