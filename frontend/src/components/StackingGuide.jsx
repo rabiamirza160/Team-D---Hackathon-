@@ -10,6 +10,7 @@ import {
   START_QUESTION_ID,
   profileChips,
 } from "../data/questions";
+import { detectLanguage } from "../api";
 import { routeQuery } from "../data/queryRouter";
 
 function rebuildProfile(answers, extraTags = {}) {
@@ -63,15 +64,28 @@ export default function StackingGuide({ language, onLanguageChange }) {
     });
   };
 
-  const handleSearch = useCallback((query) => {
-    const routed = routeQuery(query);
-    setPath(routed.path);
-    setAnswers(routed.answers);
-    setExtraTags(routed.extraTags || {});
-    setShowResults(false);
-    setGuideReady(true);
-    scrollToQuestions();
-  }, []);
+  const handleSearch = useCallback(
+    async (query) => {
+      // Switch EN/FR from the search text so follow-ups, forms, FAQ, and chat match
+      try {
+        const detected = await detectLanguage(query, language);
+        if (detected?.language === "en" || detected?.language === "fr") {
+          onLanguageChange(detected.language);
+        }
+      } catch {
+        // Keep the current UI language if detection fails
+      }
+
+      const routed = routeQuery(query);
+      setPath(routed.path);
+      setAnswers(routed.answers);
+      setExtraTags(routed.extraTags || {});
+      setShowResults(false);
+      setGuideReady(true);
+      scrollToQuestions();
+    },
+    [language, onLanguageChange]
+  );
 
   const handleSelect = useCallback(
     (questionId, option) => {
