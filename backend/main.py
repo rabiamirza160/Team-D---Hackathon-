@@ -14,6 +14,7 @@ from llm import ask_llm
 from prompts import (
     CHECKLIST_SYSTEM,
     NO_ANSWER,
+    NO_ANSWER_SIGNAL,
     build_chat_prompt,
     build_checklist_prompt,
     chat_system_prompt,
@@ -103,6 +104,10 @@ def chat(req: ChatRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"LLM error: {e}")
+
+    # The model signals when the sources don't answer the question
+    if NO_ANSWER_SIGNAL in answer:
+        return ChatResponse(answer=NO_ANSWER[language], sources=[], language=language)
 
     return ChatResponse(answer=answer, sources=unique_sources(chunks), language=language)
 
