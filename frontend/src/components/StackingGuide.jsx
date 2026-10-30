@@ -201,13 +201,6 @@ export default function StackingGuide({ language, onLanguageChange }) {
         </header>
 
         <section className="hero">
-          <div className="hero__atmosphere" aria-hidden>
-            <div className="hero__stack-preview">
-              <span style={{ background: "#0A4D68" }} />
-              <span style={{ background: "#146C7A" }} />
-              <span style={{ background: "#1B4F72" }} />
-            </div>
-          </div>
           <div className="hero__grid" aria-hidden />
           <div className="hero__content">
             <p className="hero__brand">{t.brand}</p>

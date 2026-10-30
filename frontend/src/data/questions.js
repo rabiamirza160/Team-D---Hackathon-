@@ -62,8 +62,8 @@ export const COPY = {
 export const QUESTIONS = {
   need: {
     id: "need",
-    color: "#0A4D68",
-    accent: "#E8A838",
+    color: "#26374A",
+    accent: "#269ABC",
     en: {
       title: "What do you need help with?",
       prompt:
@@ -106,8 +106,8 @@ export const QUESTIONS = {
 
   student_province: {
     id: "student_province",
-    color: "#1B4F72",
-    accent: "#F0C75E",
+    color: "#335075",
+    accent: "#5B8DB8",
     en: {
       title: "Which province’s student aid?",
       prompt: "We have Manitoba Student Aid and Saskatchewan Student Aid in our data.",
@@ -149,8 +149,8 @@ export const QUESTIONS = {
 
   student_goal: {
     id: "student_goal",
-    color: "#146C7A",
-    accent: "#7EC8C4",
+    color: "#1C2B39",
+    accent: "#269ABC",
     en: {
       title: "Where are you in the student aid process?",
       prompt: "This points us at apply, manage, or repay pages.",
@@ -215,8 +215,8 @@ export const QUESTIONS = {
 
   student_situation: {
     id: "student_situation",
-    color: "#244855",
-    accent: "#E64833",
+    color: "#26374A",
+    accent: "#269ABC",
     en: {
       title: "Anything else about your situation?",
       prompt: "Optional context that often changes which forms apply.",
@@ -281,8 +281,8 @@ export const QUESTIONS = {
 
   eia_goal: {
     id: "eia_goal",
-    color: "#2C5F2D",
-    accent: "#97BC62",
+    color: "#335075",
+    accent: "#269ABC",
     en: {
       title: "What do you need from Employment & Income Assistance?",
       prompt: "Our data covers Manitoba EIA, Rent Assist, and related employment supports.",
@@ -360,8 +360,8 @@ export const QUESTIONS = {
 
   eia_household: {
     id: "eia_household",
-    color: "#5C3D2E",
-    accent: "#E0C097",
+    color: "#1C578A",
+    accent: "#5B8DB8",
     en: {
       title: "Who is this for?",
       prompt: "Household size often changes EIA and Rent Assist forms.",
@@ -426,8 +426,8 @@ export const QUESTIONS = {
 
   eia_residency: {
     id: "eia_residency",
-    color: "#0F2C3A",
-    accent: "#F4A261",
+    color: "#26374A",
+    accent: "#269ABC",
     en: {
       title: "Are you a Manitoba resident?",
       prompt: "EIA and Rent Assist in our data are Manitoba programs.",
