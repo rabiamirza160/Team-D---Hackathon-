@@ -1,22 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AnimatePresence } from "motion/react";
-import { ReactLenis } from "lenis/react";
-import QuestionCard from "./QuestionCard";
-import FormResults from "./FormResults";
-import SearchBar from "./SearchBar";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
+import { ReactLenis } from 'lenis/react';
+import QuestionCard from './QuestionCard';
+import FormResults from './FormResults';
+import SearchBar from './SearchBar';
 import {
   COPY,
   QUESTIONS,
   START_QUESTION_ID,
   profileChips,
-} from "../data/questions";
-import { detectLanguage } from "../api";
-import { routeQuery } from "../data/queryRouter";
+} from '../data/questions';
+import { detectLanguage } from '../api';
+import { routeQuery } from '../data/queryRouter';
 
 function rebuildProfile(answers, extraTags = {}) {
   const fromAnswers = Object.values(answers).reduce(
     (acc, option) => ({ ...acc, ...(option.tags || {}) }),
-    {}
+    {},
   );
   return { ...fromAnswers, ...extraTags };
 }
@@ -37,12 +37,12 @@ export default function StackingGuide({ language, onLanguageChange }) {
 
   const cards = useMemo(
     () => path.map((id) => QUESTIONS[id]).filter(Boolean),
-    [path]
+    [path],
   );
 
   const profile = useMemo(
     () => rebuildProfile(answers, extraTags),
-    [answers, extraTags]
+    [answers, extraTags],
   );
   const chips = useMemo(() => profileChips(profile), [profile]);
 
@@ -56,9 +56,9 @@ export default function StackingGuide({ language, onLanguageChange }) {
   const scrollToQuestions = () => {
     requestAnimationFrame(() => {
       setTimeout(() => {
-        document.getElementById("questions")?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
+        document.getElementById('questions')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
         });
       }, 80);
     });
@@ -69,7 +69,7 @@ export default function StackingGuide({ language, onLanguageChange }) {
       // Switch EN/FR from the search text so follow-ups, forms, FAQ, and chat match
       try {
         const detected = await detectLanguage(query, language);
-        if (detected?.language === "en" || detected?.language === "fr") {
+        if (detected?.language === 'en' || detected?.language === 'fr') {
           onLanguageChange(detected.language);
         }
       } catch {
@@ -84,7 +84,7 @@ export default function StackingGuide({ language, onLanguageChange }) {
       setGuideReady(true);
       scrollToQuestions();
     },
-    [language, onLanguageChange]
+    [language, onLanguageChange],
   );
 
   const handleSelect = useCallback(
@@ -94,13 +94,13 @@ export default function StackingGuide({ language, onLanguageChange }) {
       setAnswers((prev) => ({ ...prev, [questionId]: option }));
       setGuideReady(true);
 
-      if (option.next === "results") {
+      if (option.next === 'results') {
         setShowResults(true);
         requestAnimationFrame(() => {
           setTimeout(() => {
-            document.getElementById("results")?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
+            document.getElementById('results')?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start',
             });
           }, 120);
         });
@@ -109,11 +109,11 @@ export default function StackingGuide({ language, onLanguageChange }) {
 
       if (QUESTIONS[option.next]) {
         setPath((prev) =>
-          prev.includes(option.next) ? prev : [...prev, option.next]
+          prev.includes(option.next) ? prev : [...prev, option.next],
         );
       }
     },
-    [answers]
+    [answers],
   );
 
   const handleBack = useCallback(() => {
@@ -126,9 +126,9 @@ export default function StackingGuide({ language, onLanguageChange }) {
         return next;
       });
       requestAnimationFrame(() => {
-        document.getElementById("questions")?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
+        document.getElementById('questions')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
         });
       });
       return;
@@ -167,13 +167,13 @@ export default function StackingGuide({ language, onLanguageChange }) {
     setExtraTags({});
     setShowResults(false);
     setGuideReady(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.key !== "ArrowLeft") return;
-      if (e.target.closest("input, textarea, select, [contenteditable=true]")) {
+      if (e.key !== 'ArrowLeft') return;
+      if (e.target.closest('input, textarea, select, [contenteditable=true]')) {
         return;
       }
       if (!canGoBack) return;
@@ -181,8 +181,8 @@ export default function StackingGuide({ language, onLanguageChange }) {
       handleBack();
     };
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, [canGoBack, handleBack]);
 
   return (
@@ -193,10 +193,10 @@ export default function StackingGuide({ language, onLanguageChange }) {
           <button
             type="button"
             className="lang-toggle"
-            onClick={() => onLanguageChange(language === "en" ? "fr" : "en")}
+            onClick={() => onLanguageChange(language === 'en' ? 'fr' : 'en')}
             title="Switch language / Changer de langue"
           >
-            {language === "en" ? "FR" : "EN"}
+            {language === 'en' ? 'FR' : 'EN'}
           </button>
         </header>
 
@@ -205,9 +205,9 @@ export default function StackingGuide({ language, onLanguageChange }) {
           <div className="hero__content">
             <p className="hero__brand">{t.brand}</p>
             <h1 className="hero__title">
-              {language === "fr"
-                ? "Aide aux étudiants et EIA, sans le labyrinthe."
-                : "Student Aid and EIA, without the maze."}
+              {language === 'fr'
+                ? 'Aide aux étudiants et EIA, sans le labyrinthe.'
+                : 'Student Aid and EIA made simple.'}
             </h1>
             <p className="hero__lede">{t.tagline}</p>
             <SearchBar language={language} copy={t} onSearch={handleSearch} />
@@ -217,7 +217,7 @@ export default function StackingGuide({ language, onLanguageChange }) {
               className="hero__scroll"
               href="#questions"
               aria-label={
-                language === "fr" ? "Défiler vers le bas" : "Scroll for more"
+                language === 'fr' ? 'Défiler vers le bas' : 'Scroll for more'
               }
             >
               <span className="hero__scroll-arrow" aria-hidden>
