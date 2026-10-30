@@ -38,6 +38,47 @@
   --shadow: 0 8px 24px rgba(38, 55, 74, 0.08);
   --font-display: "Noto Sans", "Segoe UI", sans-serif;
   --font-body: "Noto Sans", "Segoe UI", sans-serif;
+
+  --page-glow: #d9e6f0;
+  --page-mid: #eef2f5;
+  --page-end: #eceff2;
+}
+
+/* Halloween theme — toggled via data-theme on <html> */
+:root[data-theme="halloween"] {
+  --gc-header: #1a0a12;
+  --gc-header-deep: #0d0508;
+  --gc-blue: #5c2d1e;
+  --gc-link: #ff8c42;
+  --gc-link-hover: #ffb347;
+  --gc-btn: #e85d04;
+  --gc-btn-hover: #f48c06;
+  --gc-info: #2a1810;
+  --gc-info-border: #e85d04;
+  --gc-danger: #ff4d6d;
+  --gc-border: #4a3028;
+  --gc-muted: #c4a484;
+  --gc-page: #1a1210;
+  --gc-paper: #241810;
+  --gc-focus: #ff8c42;
+
+  --ink: #f5e6d3;
+  --ink-strong: #ffe8c8;
+  --paper: var(--gc-paper);
+  --page: var(--gc-page);
+  --border: var(--gc-border);
+  --border-strong: #6b4538;
+  --masthead: var(--gc-header);
+  --panel: #3d1f14;
+  --link: var(--gc-link);
+  --link-hover: var(--gc-link-hover);
+  --danger: var(--gc-danger);
+  --focus: var(--gc-focus);
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+
+  --page-glow: #3d1a0a;
+  --page-mid: #1a1210;
+  --page-end: #120c0a;
 }
 
 *,
@@ -56,11 +97,12 @@ body {
   font-family: var(--font-body);
   color: var(--ink);
   background:
-    radial-gradient(ellipse 90% 45% at 50% -8%, #d9e6f0 0%, transparent 55%),
-    linear-gradient(180deg, #eef2f5 0%, var(--page) 38%, #eceff2 100%);
+    radial-gradient(ellipse 90% 45% at 50% -8%, var(--page-glow) 0%, transparent 55%),
+    linear-gradient(180deg, var(--page-mid) 0%, var(--page) 38%, var(--page-end) 100%);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
+  transition: background 0.35s ease, color 0.25s ease;
 }
 
 a {
@@ -100,26 +142,215 @@ button {
   color: #fff;
 }
 
-.lang-toggle {
+.guide-top__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lang-toggle,
+.theme-toggle {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.55);
   color: #fff;
+  box-sizing: border-box;
+  min-width: 2.75rem;
+  min-height: 2.1rem;
   padding: 6px 14px;
   border-radius: 4px;
   font-weight: 700;
   font-size: 0.85rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.2s ease;
 }
 
-.lang-toggle:hover {
+.lang-toggle:hover,
+.theme-toggle:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: #fff;
 }
 
-.lang-toggle:focus-visible {
+.theme-toggle.is-active {
+  border-color: #ff8c42;
+  background: rgba(232, 93, 4, 0.35);
+  box-shadow: 0 0 0 1px rgba(255, 140, 66, 0.4);
+}
+
+.lang-toggle:focus-visible,
+.theme-toggle:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 2px;
+}
+
+:root[data-theme="halloween"] .guide-top {
+  border-bottom: 3px solid #e85d04;
+}
+
+:root[data-theme="halloween"] .hero__brand {
+  color: #ffb347;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="halloween"] .hero__title {
+  color: #f5e6d3;
+}
+
+:root[data-theme="halloween"] .hero__content {
+  border-left: 6px solid #e85d04;
+  background: linear-gradient(
+    90deg,
+    rgba(36, 24, 16, 0.96) 0%,
+    rgba(36, 24, 16, 0.78) 70%,
+    transparent 100%
+  );
+}
+
+:root[data-theme="halloween"] .search-bar__form {
+  background: #2a1810;
+  border-color: #6b4538;
+}
+
+:root[data-theme="halloween"] .search-bar__chip {
+  background: #3d2418;
+  border-color: #8b5a3c;
+  color: #f5e6d3;
+}
+
+:root[data-theme="halloween"] .search-bar__chip:hover {
+  background: #5c2d1e;
+  border-color: #e85d04;
+  color: #ffe8c8;
+}
+
+:root[data-theme="halloween"] .profile-strip {
+  background: #2a1810;
+  border-color: #4a3028;
+  border-left-color: #e85d04;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="halloween"] .profile-strip__label {
+  color: #ffb347;
+}
+
+:root[data-theme="halloween"] .profile-strip__chips li {
+  background: #3d2418;
+  border: 1px solid #6b4538;
+  color: #f5e6d3;
+}
+
+:root[data-theme="halloween"] .profile-strip__chips strong {
+  color: #ff8c42;
+}
+
+:root[data-theme="halloween"] .results__panel {
+  border-top-color: #e85d04;
+  background: #241810;
+  color: #f5e6d3;
+}
+
+:root[data-theme="halloween"] .results__title,
+:root[data-theme="halloween"] .results__eyebrow,
+:root[data-theme="halloween"] .results-section__title,
+:root[data-theme="halloween"] .results-faq__q {
+  color: #ffb347;
+}
+
+:root[data-theme="halloween"] .results__summary,
+:root[data-theme="halloween"] .results__status,
+:root[data-theme="halloween"] .results-faq__a,
+:root[data-theme="halloween"] .results__item-form {
+  color: #c4a484;
+}
+
+:root[data-theme="halloween"] .results__item {
+  background: #2a1810;
+  border-color: #4a3028;
+  border-left-color: #e85d04;
+  color: #f5e6d3;
+}
+
+:root[data-theme="halloween"] .results__item-task {
+  color: #f5e6d3;
+}
+
+:root[data-theme="halloween"] .results__item-label {
+  color: #ff8c42;
+}
+
+:root[data-theme="halloween"] .results-section {
+  background: #2a1810;
+  border-color: #4a3028;
+}
+
+:root[data-theme="halloween"] .results-section.is-open {
+  background: #321c12;
+}
+
+:root[data-theme="halloween"] .results-section__header {
+  color: #f5e6d3;
+}
+
+:root[data-theme="halloween"] .results-section__header:hover {
+  background: rgba(232, 93, 4, 0.12);
+}
+
+:root[data-theme="halloween"] .results-section__badge {
+  background: #e85d04;
+  color: #1a0a12;
+}
+
+:root[data-theme="halloween"] .results-section__chevron {
+  background: #3d2418;
+  border-color: #6b4538;
+  color: #ffb347;
+}
+
+:root[data-theme="halloween"] .results-section__body {
+  border-top-color: #4a3028;
+}
+
+:root[data-theme="halloween"] .results-faq__item,
+:root[data-theme="halloween"] .results-chat__bubble--ai {
+  background: #2a1810;
+  border-color: #4a3028;
+  color: #f5e6d3;
+}
+
+:root[data-theme="halloween"] .results-chat__bubble--user {
+  background: #5c2d1e;
+  color: #ffe8c8;
+}
+
+:root[data-theme="halloween"] .results-accordion {
+  border-color: #4a3028;
+}
+
+:root[data-theme="halloween"] .search-bar__submit,
+:root[data-theme="halloween"] .results-chat__composer button,
+:root[data-theme="halloween"] .results__link {
+  background: #e85d04;
+  border-color: #f48c06;
+  color: #1a0a12;
+}
+
+:root[data-theme="halloween"] .search-bar__submit:hover,
+:root[data-theme="halloween"] .results-chat__composer button:hover:not(:disabled),
+:root[data-theme="halloween"] .results__link:hover {
+  background: #f48c06;
+  color: #1a0a12;
+}
+
+:root[data-theme="halloween"] .results-chat__composer input,
+:root[data-theme="halloween"] .results__restart,
+:root[data-theme="halloween"] .read-aloud-btn {
+  background: #2a1810;
+  border-color: #6b4538;
+  color: #f5e6d3;
 }
 
 /* ——— Service landing ——— */

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { ReactLenis } from 'lenis/react';
 import QuestionCard from './QuestionCard';
@@ -13,6 +13,15 @@ import {
 import { detectLanguage } from '../api';
 import { routeQuery } from '../data/queryRouter';
 
+const HALLOWEEN_AUDIO_SRC = '/halloween-bg.mp3';
+const HALLOWEEN_AUDIO_VOLUME = 0.22;
+const BOO_AUDIO_SRC = '/boo.mp3';
+const BOO_AUDIO_VOLUME = 0.55;
+/** Chance to play boo.mp3 on each Halloween button click (not every / alternating). */
+const BOO_TRIGGER_CHANCE = 0.2;
+/** Clicks anywhere before the Halloween toggle appears. */
+const HALLOWEEN_EASTER_EGG_CLICKS = 5;
+
 function rebuildProfile(answers, extraTags = {}) {
   const fromAnswers = Object.values(answers).reduce(
     (acc, option) => ({ ...acc, ...(option.tags || {}) }),
@@ -21,11 +30,25 @@ function rebuildProfile(answers, extraTags = {}) {
   return { ...fromAnswers, ...extraTags };
 }
 
+const HALLOWEEN_CARD_COLORS = [
+  { color: "#3D1F14", accent: "#FF8C42" },
+  { color: "#5C2D1E", accent: "#FFB347" },
+  { color: "#2A1810", accent: "#E85D04" },
+  { color: "#4A2818", accent: "#F48C06" },
+  { color: "#3D2418", accent: "#FF8C42" },
+  { color: "#1A0A12", accent: "#FFB347" },
+  { color: "#5C2D1E", accent: "#E85D04" },
+];
+
 /**
  * Search seeds a path into the stacking Q&A. Cards layer like the
  * ui-layouts Framer Stacking demo. Backtrack via back arrow, drag-right,
  * or Left Arrow key.
  */
+const HALLOWEEN_HEADER_BRAND = "🧟‍♂️";
+const HALLOWEEN_FOOTER_BRAND = "🧛‍♀️";
+const HALLOWEEN_HERO_BRAND = "👻 Boo-reaucracy 👻";
+
 export default function StackingGuide({ language, onLanguageChange }) {
   const t = COPY[language] || COPY.en;
 
@@ -34,6 +57,89 @@ export default function StackingGuide({ language, onLanguageChange }) {
   const [extraTags, setExtraTags] = useState({});
   const [showResults, setShowResults] = useState(false);
   const [guideReady, setGuideReady] = useState(false);
+  const [halloween, setHalloween] = useState(false);
+  const [halloweenUnlocked, setHalloweenUnlocked] = useState(false);
+  const halloweenAudioRef = useRef(null);
+  const easterEggClicksRef = useRef(0);
+  const headerBrand = halloween ? HALLOWEEN_HEADER_BRAND : t.brand;
+  const heroBrand = halloween ? HALLOWEEN_HERO_BRAND : t.brand;
+  const footerBrand = halloween ? HALLOWEEN_FOOTER_BRAND : t.brand;
+
+  const maybePlayBoo = useCallback(() => {
+    if (Math.random() >= BOO_TRIGGER_CHANCE) return;
+    // Fresh one-shot inside the click handler (user gesture) is more
+    // reliable than a preloaded ref that React Strict Mode can tear down.
+    const boo = new Audio(BOO_AUDIO_SRC);
+    boo.volume = BOO_AUDIO_VOLUME;
+    void boo.play();
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      "data-theme",
+      halloween ? "halloween" : "default"
+    );
+    return () => {
+      document.documentElement.setAttribute("data-theme", "default");
+    };
+  }, [halloween]);
+
+  useEffect(() => {
+    const audio = new Audio(HALLOWEEN_AUDIO_SRC);
+    audio.loop = true;
+    audio.preload = "auto";
+    audio.volume = HALLOWEEN_AUDIO_VOLUME;
+    halloweenAudioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      audio.src = "";
+      halloweenAudioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const audio = halloweenAudioRef.current;
+    if (!audio) return;
+
+    if (halloween) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {
+        // Autoplay can fail if the browser blocks it; the theme toggle
+        // click usually counts as a user gesture, so this is a soft fallback.
+      });
+    } else {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }, [halloween]);
+
+  // Easter egg: reveal Halloween toggle after N clicks anywhere
+  useEffect(() => {
+    if (halloweenUnlocked) return;
+
+    const onPointerDown = () => {
+      easterEggClicksRef.current += 1;
+      if (easterEggClicksRef.current >= HALLOWEEN_EASTER_EGG_CLICKS) {
+        setHalloweenUnlocked(true);
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [halloweenUnlocked]);
+
+  // Random boo on any click while Halloween theme is active
+  useEffect(() => {
+    if (!halloween) return;
+
+    const onPointerDown = () => {
+      maybePlayBoo();
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [halloween, maybePlayBoo]);
 
   const cards = useMemo(
     () => path.map((id) => QUESTIONS[id]).filter(Boolean),
@@ -189,21 +295,42 @@ export default function StackingGuide({ language, onLanguageChange }) {
     <ReactLenis root>
       <div className="guide">
         <header className="guide-top">
-          <div className="guide-top__brand">{t.brand}</div>
-          <button
-            type="button"
-            className="lang-toggle"
-            onClick={() => onLanguageChange(language === 'en' ? 'fr' : 'en')}
-            title="Switch language / Changer de langue"
-          >
-            {language === 'en' ? 'FR' : 'EN'}
-          </button>
+          <div className="guide-top__brand">{headerBrand}</div>
+          <div className="guide-top__actions">
+            {halloweenUnlocked && (
+              <button
+                type="button"
+                className={`theme-toggle${halloween ? " is-active" : ""}`}
+                onClick={() => setHalloween((on) => !on)}
+                title={
+                  language === "fr"
+                    ? halloween
+                      ? "Revenir au thème normal"
+                      : "Thème Halloween"
+                    : halloween
+                      ? "Back to normal theme"
+                      : "Halloween theme"
+                }
+                aria-pressed={halloween}
+              >
+                {halloween ? "🎃" : "🪦"}
+              </button>
+            )}
+            <button
+              type="button"
+              className="lang-toggle"
+              onClick={() => onLanguageChange(language === "en" ? "fr" : "en")}
+              title="Switch language / Changer de langue"
+            >
+              {language === "en" ? "FR" : "EN"}
+            </button>
+          </div>
         </header>
 
         <section className="hero">
           <div className="hero__grid" aria-hidden />
           <div className="hero__content">
-            <p className="hero__brand">{t.brand}</p>
+            <p className="hero__brand">{heroBrand}</p>
             <h1 className="hero__title">
               {language === 'fr'
                 ? 'Aide aux étudiants et EIA, sans le labyrinthe.'
@@ -236,14 +363,17 @@ export default function StackingGuide({ language, onLanguageChange }) {
                   const targetScale = 1 - (cards.length - 1 - i) * 0.05;
                   const selected = answers[card.id];
                   const isTop = i === cards.length - 1;
+                  const themeColors = halloween
+                    ? HALLOWEEN_CARD_COLORS[i % HALLOWEEN_CARD_COLORS.length]
+                    : null;
 
                   return (
                     <QuestionCard
                       key={card.id}
                       i={i}
                       total={cards.length}
-                      color={card.color}
-                      accent={card.accent}
+                      color={themeColors?.color || card.color}
+                      accent={themeColors?.accent || card.accent}
                       title={locale.title}
                       prompt={locale.prompt}
                       options={locale.options}
@@ -290,7 +420,7 @@ export default function StackingGuide({ language, onLanguageChange }) {
         )}
 
         <footer className="guide-footer">
-          <p>{t.brand}</p>
+          <p>{footerBrand}</p>
           <p>Manitoba · CanAI Garage 2026</p>
         </footer>
       </div>
