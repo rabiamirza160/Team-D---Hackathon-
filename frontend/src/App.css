@@ -618,7 +618,8 @@ button {
 .stack-stage__frame {
   position: relative;
   width: min(720px, 88vw);
-  height: 520px;
+  /* Room for tallest content card + stack offsets (cards are height: auto) */
+  height: 580px;
   margin-top: 5vh;
 }
 
@@ -628,13 +629,14 @@ button {
   width: 100%;
   display: flex;
   flex-direction: column;
-  height: 450px;
-  padding: clamp(22px, 4vw, 40px);
+  height: auto;
+  padding: clamp(18px, 3.5vw, 32px);
+  padding-bottom: clamp(20px, 3.5vw, 28px);
   border-radius: var(--radius-lg);
   color: #fff;
   box-shadow: 0 18px 44px rgba(28, 43, 57, 0.28);
   transform-origin: top center;
-  overflow: auto;
+  overflow: visible;
 }
 
 .stack-card.is-stacked {
@@ -645,12 +647,13 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   opacity: 0.9;
+  flex-shrink: 0;
 }
 
 .stack-card__meta-left {
@@ -698,25 +701,28 @@ button {
 }
 
 .stack-card__title {
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: clamp(1.35rem, 2.6vw, 1.75rem);
   font-weight: 700;
   letter-spacing: -0.015em;
   line-height: 1.2;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .stack-card__prompt {
-  font-size: 1rem;
-  line-height: 1.5;
+  font-size: 0.95rem;
+  line-height: 1.45;
   opacity: 0.92;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
   max-width: 36rem;
+  flex-shrink: 0;
 }
 
 .stack-card__options {
   display: grid;
-  gap: 10px;
-  flex: 1;
+  gap: 8px;
+  flex: 0 0 auto;
+  align-content: start;
 }
 
 .stack-option {
@@ -729,9 +735,9 @@ button {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.28);
   color: white;
-  padding: 14px 16px;
+  padding: 11px 14px;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
@@ -1041,6 +1047,7 @@ button {
   flex: 1;
   max-height: 360px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1227,11 +1234,7 @@ button {
   }
 
   .stack-stage__frame {
-    height: 560px;
-  }
-
-  .stack-card {
-    height: 480px;
+    height: 620px;
   }
 
   .profile-strip {

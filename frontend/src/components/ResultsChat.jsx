@@ -82,7 +82,13 @@ export default function ResultsChat({
 
   return (
     <div className="results-chat">
-      <div className="results-chat__messages" role="log" aria-live="polite">
+      <div
+        className="results-chat__messages"
+        data-lenis-prevent
+        data-lenis-prevent-wheel
+        role="log"
+        aria-live="polite"
+      >
         {messages.map((msg, index) => (
           <div
             key={`${msg.type}-${index}`}

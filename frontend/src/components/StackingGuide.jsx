@@ -31,13 +31,13 @@ function rebuildProfile(answers, extraTags = {}) {
 }
 
 const HALLOWEEN_CARD_COLORS = [
-  { color: "#3D1F14", accent: "#FF8C42" },
-  { color: "#5C2D1E", accent: "#FFB347" },
-  { color: "#2A1810", accent: "#E85D04" },
-  { color: "#4A2818", accent: "#F48C06" },
-  { color: "#3D2418", accent: "#FF8C42" },
-  { color: "#1A0A12", accent: "#FFB347" },
-  { color: "#5C2D1E", accent: "#E85D04" },
+  { color: '#3D1F14', accent: '#FF8C42' },
+  { color: '#5C2D1E', accent: '#FFB347' },
+  { color: '#2A1810', accent: '#E85D04' },
+  { color: '#4A2818', accent: '#F48C06' },
+  { color: '#3D2418', accent: '#FF8C42' },
+  { color: '#1A0A12', accent: '#FFB347' },
+  { color: '#5C2D1E', accent: '#E85D04' },
 ];
 
 /**
@@ -45,9 +45,9 @@ const HALLOWEEN_CARD_COLORS = [
  * ui-layouts Framer Stacking demo. Backtrack via back arrow, drag-right,
  * or Left Arrow key.
  */
-const HALLOWEEN_HEADER_BRAND = "🧟‍♂️";
-const HALLOWEEN_FOOTER_BRAND = "🧛‍♀️";
-const HALLOWEEN_HERO_BRAND = "👻 Boo-reaucracy 👻";
+const HALLOWEEN_HEADER_BRAND = '🧟‍♂️';
+const HALLOWEEN_FOOTER_BRAND = '🧛‍♀️';
+const HALLOWEEN_HERO_BRAND = 'Boo-reaucracy 👻';
 
 export default function StackingGuide({ language, onLanguageChange }) {
   const t = COPY[language] || COPY.en;
@@ -76,24 +76,24 @@ export default function StackingGuide({ language, onLanguageChange }) {
 
   useEffect(() => {
     document.documentElement.setAttribute(
-      "data-theme",
-      halloween ? "halloween" : "default"
+      'data-theme',
+      halloween ? 'halloween' : 'default',
     );
     return () => {
-      document.documentElement.setAttribute("data-theme", "default");
+      document.documentElement.setAttribute('data-theme', 'default');
     };
   }, [halloween]);
 
   useEffect(() => {
     const audio = new Audio(HALLOWEEN_AUDIO_SRC);
     audio.loop = true;
-    audio.preload = "auto";
+    audio.preload = 'auto';
     audio.volume = HALLOWEEN_AUDIO_VOLUME;
     halloweenAudioRef.current = audio;
 
     return () => {
       audio.pause();
-      audio.src = "";
+      audio.src = '';
       halloweenAudioRef.current = null;
     };
   }, []);
@@ -125,8 +125,8 @@ export default function StackingGuide({ language, onLanguageChange }) {
       }
     };
 
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [halloweenUnlocked]);
 
   // Random boo on any click while Halloween theme is active
@@ -137,8 +137,8 @@ export default function StackingGuide({ language, onLanguageChange }) {
       maybePlayBoo();
     };
 
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [halloween, maybePlayBoo]);
 
   const cards = useMemo(
@@ -292,7 +292,15 @@ export default function StackingGuide({ language, onLanguageChange }) {
   }, [canGoBack, handleBack]);
 
   return (
-    <ReactLenis root>
+    <ReactLenis
+      root
+      options={{
+        // Let nested panels (chat) use native wheel scroll
+        prevent: (node) =>
+          node?.classList?.contains('results-chat__messages') ||
+          Boolean(node?.closest?.('[data-lenis-prevent]')),
+      }}
+    >
       <div className="guide">
         <header className="guide-top">
           <div className="guide-top__brand">{headerBrand}</div>
@@ -300,29 +308,29 @@ export default function StackingGuide({ language, onLanguageChange }) {
             {halloweenUnlocked && (
               <button
                 type="button"
-                className={`theme-toggle${halloween ? " is-active" : ""}`}
+                className={`theme-toggle${halloween ? ' is-active' : ''}`}
                 onClick={() => setHalloween((on) => !on)}
                 title={
-                  language === "fr"
+                  language === 'fr'
                     ? halloween
-                      ? "Revenir au thème normal"
-                      : "Thème Halloween"
+                      ? 'Revenir au thème normal'
+                      : 'Thème Halloween'
                     : halloween
-                      ? "Back to normal theme"
-                      : "Halloween theme"
+                      ? 'Back to normal theme'
+                      : 'Halloween theme'
                 }
                 aria-pressed={halloween}
               >
-                {halloween ? "🎃" : "🪦"}
+                {halloween ? '🎃' : '🪦'}
               </button>
             )}
             <button
               type="button"
               className="lang-toggle"
-              onClick={() => onLanguageChange(language === "en" ? "fr" : "en")}
+              onClick={() => onLanguageChange(language === 'en' ? 'fr' : 'en')}
               title="Switch language / Changer de langue"
             >
-              {language === "en" ? "FR" : "EN"}
+              {language === 'en' ? 'FR' : 'EN'}
             </button>
           </div>
         </header>
