@@ -200,9 +200,10 @@ button {
 }
 
 :root[data-theme="halloween"] .hero__content {
-  border-left: 6px solid #e85d04;
+  border-left: none;
+  border-top: 6px solid #e85d04;
   background: linear-gradient(
-    90deg,
+    180deg,
     rgba(36, 24, 16, 0.96) 0%,
     rgba(36, 24, 16, 0.78) 70%,
     transparent 100%
@@ -360,7 +361,8 @@ button {
   min-height: calc(100vh - 56px);
   width: 100%;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
   padding: 100px 8vw 12vh;
   overflow: hidden;
 }
@@ -379,10 +381,13 @@ button {
 .hero__content {
   position: relative;
   z-index: 2;
+  width: min(40rem, 100%);
   max-width: 40rem;
-  padding: 28px 28px 28px 0;
+  margin: 0 auto;
+  padding: 28px;
+  text-align: center;
   background: linear-gradient(
-    90deg,
+    180deg,
     rgba(245, 245, 245, 0.96) 0%,
     rgba(245, 245, 245, 0.78) 70%,
     transparent 100%
@@ -412,7 +417,7 @@ button {
   line-height: 1.55;
   color: var(--gc-muted);
   max-width: 30rem;
-  margin-bottom: 22px;
+  margin: 0 auto 22px;
 }
 
 .visually-hidden {
@@ -431,6 +436,7 @@ button {
   position: relative;
   z-index: 3;
   width: min(34rem, 100%);
+  margin: 0 auto;
 }
 
 .search-bar__form {
@@ -496,6 +502,7 @@ button {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   margin-top: 12px;
 }
@@ -504,6 +511,8 @@ button {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--gc-muted);
+  width: 100%;
+  text-align: center;
 }
 
 .search-bar__chip {
@@ -1226,7 +1235,8 @@ button {
 @media (max-width: 860px) {
   .hero {
     padding: 110px 6vw 10vh;
-    align-items: flex-end;
+    align-items: center;
+    justify-content: center;
   }
 
   .hero__brand {
