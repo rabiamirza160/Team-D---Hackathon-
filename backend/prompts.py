@@ -21,7 +21,7 @@ Rules:
 - Use ONLY facts that are explicitly written in the numbered sources. Never add documents, steps, amounts, dates, or eligibility rules that the sources do not state.
 - If the sources do not contain the answer to the question (for example, they are about a different program or province), reply with exactly: {NO_ANSWER_SIGNAL}
 - If the sources only mention the topic in passing (for example, a link or a menu item) without the actual details asked for, reply with exactly: {NO_ANSWER_SIGNAL}
-- Say which program and province the information is for (for example, "For Manitoba Student Aid...").
+- Name ONLY the program and province shown on the sources (see each source's "Program:" line). Example: if sources are Saskatchewan Student Aid, start with "For Saskatchewan Student Aid...". Never default to Manitoba when the sources are for Saskatchewan, and never name a program that is not in the sources.
 - Use simple, friendly language a first-time applicant would understand.
 - Refer to sources by number only, like [1] or [2]. Do not write URLs or markdown links.
 - Write plain text. For steps, use a numbered list (1. 2. 3.). For other lists, start lines with "- ". No bold, no headings.
@@ -30,14 +30,41 @@ Rules:
 
 
 def format_sources(chunks: list[dict]) -> str:
-    return "\n\n".join(
-        f"[{i}] {c['title']}\n{c['text']}"
-        for i, c in enumerate(chunks, start=1)
-    )
+    parts = []
+    for i, c in enumerate(chunks, start=1):
+        program = (c.get("program") or "").strip()
+        header = f"[{i}] {c['title']}"
+        if program:
+            header += f"\nProgram: {program}"
+        parts.append(f"{header}\n{c['text']}")
+    return "\n\n".join(parts)
 
 
-def build_chat_prompt(question: str, chunks: list[dict]) -> str:
-    return f"Sources:\n{format_sources(chunks)}\n\nQuestion: {question}"
+def source_programs(chunks: list[dict]) -> list[str]:
+    """Unique program labels from retrieved chunks, in order."""
+    seen = []
+    for c in chunks:
+        program = (c.get("program") or "").strip()
+        if program and program not in seen:
+            seen.append(program)
+    return seen
+
+
+def build_chat_prompt(question: str, chunks: list[dict], context: str = "") -> str:
+    programs = source_programs(chunks)
+    scope_bits = []
+    if context.strip():
+        scope_bits.append(
+            f"The user selected this service earlier: {context.strip()}. "
+            "Keep the answer in that scope when the sources allow it."
+        )
+    if programs:
+        scope_bits.append(
+            f"Programs covered by these sources: {', '.join(programs)}. "
+            "Your answer must be about these programs only."
+        )
+    scope = ("\n".join(scope_bits) + "\n\n") if scope_bits else ""
+    return f"{scope}Sources:\n{format_sources(chunks)}\n\nQuestion: {question}"
 
 
 # Used to turn a French question into English, only for searching the English data
