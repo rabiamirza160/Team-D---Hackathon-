@@ -19,7 +19,12 @@ function latestAi(messages) {
   return null;
 }
 
-export default function ResultsChat({ language, copy, onSpeakTargetChange }) {
+export default function ResultsChat({
+  language,
+  context = "",
+  copy,
+  onSpeakTargetChange,
+}) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState(() => [welcomeMessage(language)]);
@@ -45,10 +50,10 @@ export default function ResultsChat({ language, copy, onSpeakTargetChange }) {
     setMessage("");
     setLoading(true);
 
-    // Send the question alone — same contract as the old chatbot.
-    // Appending the profile query here poisoned BM25 hits and language detection.
+    // Message stays clean for language detection; short program/province
+    // context scopes search for vague follow-ups ("How do I apply?").
     try {
-      const data = await sendChat(text, language);
+      const data = await sendChat(text, language, context);
       setMessages((prev) => [
         ...prev,
         {

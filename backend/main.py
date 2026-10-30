@@ -20,6 +20,7 @@ from prompts import (
     build_checklist_prompt,
     chat_system_prompt,
     checklist_system_prompt,
+    source_programs,
 )
 from retrieval import search
 
@@ -36,6 +37,9 @@ class Source(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     language: Literal["en", "fr"] = "en"  # UI toggle; used as fallback only
+    # Short program/province from the guided profile (optional). Used to scope
+    # search for vague follow-ups without rewriting the user's question.
+    context: str = ""
 
 
 class ChatResponse(BaseModel):
@@ -76,8 +80,12 @@ CHAT_CACHE: dict[tuple[str, str], ChatResponse] = {}
 CHECKLIST_CACHE: dict[tuple[str, str], ChecklistResponse] = {}
 
 
-def cache_key(text: str, language: str) -> tuple[str, str]:
-    return (" ".join(text.lower().split()), language)
+def cache_key(text: str, language: str, context: str = "") -> tuple[str, str, str]:
+    return (
+        " ".join(text.lower().split()),
+        language,
+        " ".join((context or "").lower().split()),
+    )
 
 
 # ---------- Helpers ----------
@@ -111,6 +119,28 @@ def unique_sources(chunks: list[dict]) -> list[Source]:
             seen.add(c["url"])
             sources.append(Source(title=c["title"], url=c["url"]))
     return sources
+
+
+def answer_mismatches_source_province(answer: str, chunks: list[dict]) -> bool:
+    """
+    Small models sometimes open with the wrong province (e.g. Manitoba) even when
+    every retrieved chunk is Saskatchewan Student Aid. Detect that clear mismatch.
+    """
+    programs = " ".join(source_programs(chunks)).lower()
+    text = answer.lower()
+    if not programs:
+        return False
+
+    sources_sk = "saskatchewan" in programs
+    sources_mb_student = "manitoba student" in programs
+    answer_sk = "saskatchewan" in text
+    answer_mb_student = "manitoba student" in text
+
+    if sources_sk and not sources_mb_student and answer_mb_student:
+        return True
+    if sources_mb_student and not sources_sk and answer_sk and "manitoba" not in text:
+        return True
+    return False
 
 
 def parse_checklist(raw: str, valid_urls: set[str]) -> list[ChecklistItem]:
@@ -154,13 +184,18 @@ def detect(req: DetectRequest):
 def chat(req: ChatRequest):
     # Answer in the language of the question; the UI toggle is only a fallback
     language = detect_language(req.message, fallback=req.language)
+    context = (req.context or "").strip()
 
-    key = cache_key(req.message, language)
+    key = cache_key(req.message, language, context)
     if key in CHAT_CACHE:
         print(f"[cache] chat hit: {req.message!r}")
         return CHAT_CACHE[key]
 
-    chunks = search(search_query_for(req.message, language), k=5)
+    # Bias retrieval with selected program/province; keep the user text for the LLM
+    search_text = search_query_for(req.message, language)
+    if context:
+        search_text = f"{search_text} {context}".strip()
+    chunks = search(search_text, k=5)
 
     # Scope rule: if the data doesn't cover it, say so instead of guessing
     if not chunks:
@@ -171,8 +206,18 @@ def chat(req: ChatRequest):
     try:
         answer = ask_llm(
             chat_system_prompt(language),
-            build_chat_prompt(req.message, chunks),  # original question, so it answers in that language
+            build_chat_prompt(req.message, chunks, context=context),
         )
+        # One retry if the model names the wrong province vs the retrieved sources
+        if answer_mismatches_source_province(answer, chunks):
+            programs = ", ".join(source_programs(chunks)) or "the programs in the sources"
+            print(f"[chat] province mismatch, retrying for: {programs}")
+            answer = ask_llm(
+                chat_system_prompt(language),
+                build_chat_prompt(req.message, chunks, context=context)
+                + f"\n\nCorrection: Your previous draft named the wrong province. "
+                f"Answer again using only: {programs}.",
+            )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"LLM error: {e}")  # errors are never cached
 

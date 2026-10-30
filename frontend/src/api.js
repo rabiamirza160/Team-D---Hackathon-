@@ -1,10 +1,14 @@
 // All backend calls live here. Matches the API contract in the README.
 
-export async function sendChat(message, language = "en") {
+export async function sendChat(message, language = "en", context = "") {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, language }),
+    body: JSON.stringify({
+      message,
+      language,
+      ...(context ? { context } : {}),
+    }),
   });
   if (!res.ok) throw new Error(`Chat request failed: ${res.status}`);
   return res.json(); // { answer, sources: [{ title, url }] }

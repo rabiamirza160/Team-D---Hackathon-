@@ -116,21 +116,48 @@ export function routeQuery(rawQuery) {
     };
   }
 
-  // —— EIA / Income support / Rent Assist / “EI” as users often type ——
+  // —— EIA / Income support / Rent Assist / everyday hardship phrasing ——
+  const mentionsRent =
+    /\b(rent|loyer|housing|logement|landlord|propri[eé]taire)\b/.test(q) ||
+    /\b(can'?t|cannot|can not|unable|struggle|struggling|hard (to|time)|afford)\b.{0,40}\b(rent|loyer|housing|logement)\b/.test(
+      q
+    ) ||
+    /\b(rent|loyer|housing|logement)\b.{0,40}\b(afford|pay|cover|help)\b/.test(q);
+
+  const mentionsJobLoss =
+    /\b(lost (my |our )?job|lose (my |our )?job|laid off|layoff|unemployed|out of work|no (more )?work|fired|job loss|perte d.?emploi|ch[oô]mage|sans emploi)\b/.test(
+      q
+    );
+
+  const mentionsIncomeNeed =
+    /\b(can'?t (pay|afford)|cannot (pay|afford)|no money|behind on|need (help|assistance|support) (with |for )?(rent|bills|housing|living)|aide (pour|au) (loyer|logement|revenu))\b/.test(
+      q
+    );
+
   const isEia =
     /\b(eia|income support|income assistance|aide au revenu|aide à l.?emploi|aide a l.?emploi|rent assist|aide au loyer|employment and income|disability support|finding work)\b/.test(
       q
     ) ||
     // bare "ei" / "ae" — scoped to our EIA data, not federal EI
-    /(^|\s)(ei|e\.i\.|ae)(\s|$)/.test(q);
+    /(^|\s)(ei|e\.i\.|ae)(\s|$)/.test(q) ||
+    mentionsRent ||
+    mentionsJobLoss ||
+    mentionsIncomeNeed;
 
   if (isEia) {
     let goalId = null;
-    if (/\b(rent|loyer|housing|logement)\b/.test(q)) goalId = "rent";
-    else if (/\b(work|job|emploi|finding work)\b/.test(q)) goalId = "work";
+    // Rent / housing hardship takes priority over job-loss phrasing
+    if (mentionsRent || /\b(rent|loyer|housing|logement)\b/.test(q))
+      goalId = "rent";
+    else if (
+      mentionsJobLoss ||
+      /\b(work|job|emploi|finding work)\b/.test(q)
+    )
+      goalId = "work";
     else if (/\b(disabilit|handicap)\b/.test(q)) goalId = "disability";
     else if (/\b(eligib|admissib|info|what is)\b/.test(q)) goalId = "info";
     else if (/\b(apply|application|demande)\b/.test(q)) goalId = "apply";
+    else if (mentionsIncomeNeed) goalId = "apply";
 
     if (goalId) {
       return {

@@ -22,11 +22,61 @@ STOPWORDS = {
     "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "is", "are", "be",
     "do", "does", "i", "me", "my", "you", "your", "it", "this", "that", "what", "how",
     "can", "with", "at", "by", "from", "as", "if", "am", "was", "will", "about",
+    # Conversational / hardship phrasing — high IDF would otherwise kill coverage
+    "lost", "lose", "losing", "afford", "need", "needs", "needed", "help", "please",
+    "cant", "cannot", "unable", "really", "just", "still", "also", "someone",
+    "anyone", "having", "have", "has", "had", "get", "got", "make", "made",
+    "behind", "broke", "struggling", "struggle", "hard", "time", "times",
+    "anymore", "currently", "lately",
     # French
     "le", "la", "les", "un", "une", "des", "de", "du", "et", "ou", "en", "est", "je",
     "mon", "ma", "mes", "vous", "votre", "pour", "que", "qui", "quel", "quels",
     "quelle", "comment", "il", "elle", "au", "aux", "dans", "sur", "avec",
+    "perdu", "perdre", "besoin", "aide", "peux", "puis", "plus", "sans",
 }
+
+# Everyday asks → program terms that exist in our scraped pages
+_INTENT_EXPANSIONS = [
+    (
+        re.compile(
+            r"\b(rent|loyer|housing|logement|landlord|propri[eé]taire)\b|"
+            r"\b(can'?t|cannot|unable|afford|struggle|struggling|behind)\b.{0,48}"
+            r"\b(rent|loyer|housing|pay|bills|loyer)\b|"
+            r"\b(rent|loyer)\b.{0,48}\b(afford|pay|cover|help|aide)\b",
+            re.I,
+        ),
+        "Rent Assist Manitoba income assistance housing rent",
+    ),
+    (
+        re.compile(
+            r"\b(lost (my |our )?job|laid off|layoff|unemployed|out of work|"
+            r"no (more )?work|fired|job loss|perte d.?emploi|ch[oô]mage|sans emploi)\b",
+            re.I,
+        ),
+        "Employment and Income Assistance Manitoba EIA",
+    ),
+    (
+        re.compile(
+            r"\b(need (help|assistance|support)|aide (pour|au)|no money|"
+            r"can'?t (pay|afford)|cannot (pay|afford))\b",
+            re.I,
+        ),
+        "Manitoba Employment and Income Assistance income support",
+    ),
+]
+
+
+def expand_query(query: str) -> str:
+    """Append program keywords when the ask uses everyday hardship wording."""
+    extras = []
+    seen = set()
+    for pattern, addition in _INTENT_EXPANSIONS:
+        if pattern.search(query) and addition not in seen:
+            extras.append(addition)
+            seen.add(addition)
+    if not extras:
+        return query
+    return f"{query} {' '.join(extras)}"
 
 
 def tokenize(text: str) -> list[str]:
@@ -94,7 +144,8 @@ def search(query: str, k: int = 5) -> list[dict]:
     """Return up to k chunks most relevant to the query: [{text, title, url, lang, ...}]."""
     if BM25 is None:
         return []
-    tokens = tokenize(query)
+    expanded = expand_query(query)
+    tokens = tokenize(expanded)
     if not tokens:
         return []
 
@@ -105,7 +156,7 @@ def search(query: str, k: int = 5) -> list[dict]:
 
     body_scores = BM25.get_scores(tokens)
     title_scores = TITLE_BM25.get_scores(tokens)
-    rule = _province_rule(query)
+    rule = _province_rule(expanded)
 
     scores = []
     for i, chunk in enumerate(CHUNKS):

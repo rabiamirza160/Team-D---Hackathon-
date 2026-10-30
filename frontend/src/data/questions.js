@@ -569,6 +569,16 @@ export function buildChecklistQuery(profile) {
   return "Manitoba Student Aid Employment and Income Assistance";
 }
 
+/**
+ * Compact program/province scope for follow-up chat.
+ * Kept short so BM25 stays on the selected service without the full situation dump.
+ */
+export function buildChatContext(profile) {
+  return uniqueParts([profile?.program, profile?.province, profile?.topic]).join(
+    " "
+  );
+}
+
 const CHIP_LABELS = {
   query: "Asked",
   topic: "Topic",

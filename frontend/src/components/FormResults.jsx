@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getChecklist } from "../api";
 import {
+  buildChatContext,
   buildChecklistQuery,
   buildSituation,
   COPY,
@@ -65,6 +66,7 @@ export default function FormResults({ profile, language, onRestart }) {
   const t = COPY[language] || COPY.en;
   const situation = buildSituation(profile, language);
   const checklistQuery = buildChecklistQuery(profile);
+  const chatContext = buildChatContext(profile);
   const faqs = faqsForProfile(profile, language);
 
   const [items, setItems] = useState(null);
@@ -226,8 +228,9 @@ export default function FormResults({ profile, language, onRestart }) {
             }
           >
             <ResultsChat
-              key={language}
+              key={`${language}-${chatContext}`}
               language={language}
+              context={chatContext}
               copy={t}
               onSpeakTargetChange={handleSpeakTargetChange}
             />
